@@ -13,12 +13,34 @@ let canvasWidth = mapWidth+100;
 let canvasHeight = mapHeight+100;
 let BKWmapImgscale = 1
 
-let color380220kV = [0, 135, 45];
-let color132kV = [255, 204, 0];
-let color50kV = [0, 45, 105];
-let colorBackground = [133, 207, 232];
+// BKW Corporate Colors (RGB)
+let BKW_Light_Yellow = [255, 204, 0];      // HEX #ffcc00
+let BKW_Light_Green = [214, 215, 0];       // HEX #d6d700
+let BKW_Light_Blue = [133, 207, 232];      // HEX #85cfe8
+let BKW_Red = [221, 50, 33];               // HEX #dd3221
+let BKW_Dark_Red = [106, 0, 56];           // HEX #6a0038
+let BKW_Green = [0, 135, 45];              // HEX #00872d
+let BKW_Dark_Green = [0, 72, 64];          // HEX #004840
+let BKW_Blue = [0, 127, 167];              // HEX #007fa7
+let BKW_Dark_Blue = [0, 45, 105];          // HEX #002d69
+let BKW_Orange = [255, 100, 24];           // HEX #ff6418
+let BKW_White = [255, 255, 255];           // HEX #ffffff
+let BKW_Black_10 = [229, 229, 229];        // HEX #e5e5e5
+let BKW_Black_25 = [191, 191, 191];        // HEX #bfbfbf
+let BKW_Black_50 = [118, 118, 118];        // HEX #767676
+let BKW_Black_75 = [64, 64, 64];           // HEX #404040
+let BKW_Black = [0, 0, 0];                 // HEX #000000
+
+// Line colors
+let color380220kV = BKW_Green;
+let color132kV = BKW_Orange;
+let color50kV = BKW_Blue;
+
+// Background colors
+let colorBackground = BKW_Dark_Blue;
 
 let BKWmapImg;
+
 
 
 let voltageLayers = {
@@ -26,7 +48,6 @@ let voltageLayers = {
     "132kV":     { visible: true, lines: [], substations: [], particles: [] },
     "50kV":      { visible: true, lines: [], substations: [], particles: [] },
     "connector": { visible: true, lines: [], substations: [], particles: [] }
-
   };
   
 let maxPower = 0; 
@@ -36,6 +57,7 @@ let maxPower = 0;
 
 let latestUpdateTime = "";
 
+// Load Data
 function preload() {
   BKWmapImg = loadImage("bkw_map.png");  // transparentes Bild laden
   load_substations();
@@ -45,13 +67,11 @@ function preload() {
 
 
 }
-
 function loadLastUpdateTime() {
   loadStrings("latest_timestamp.txt", result => {
     latestUpdateTime = `Letztes Update: ${result[0]}`;
   });
 }
-
 function load_substations() {
     d3.dsv(";", "substations_list.csv", d3.autoType)
         .then(function (csv) {
@@ -68,31 +88,18 @@ function load_substations() {
             csv.forEach(d => {
                 let scaledX = map(d.X, minX, maxX, 50, gridWidth);
                 let scaledY = map(d.Y, minY, maxY, 50, gridHeight);
-                
-                const sub = {
-                    type: d.Type,
-                    name: d.Name,
-                    x: scaledX,
-                    y: scaledY,
-                    power: d.P_MW || 0 // store the 16kV power
-
-                  };
-                  
-                  substations.push(sub);
-                  
-                  if (voltageLayers[d.Type]) {
-                    voltageLayers[d.Type].substations.push(sub);
-                  }
-                  
+                const sub = { type: d.Type, name: d.Name, x: scaledX, y: scaledY, power: d.P_MW || 0 };
+                substations.push(sub);
+                if (voltageLayers[d.Type]) {
+                  voltageLayers[d.Type].substations.push(sub);
+                }
             });
-
-            console.log("✅ Scaled substations:", substations);
+            console.log("✅ Loaded substations:", substations);
         })
         .catch(function (error) {
             console.error("❌ Error loading substations CSV:", error);
         });
 }
-
 
 function load_lines() {
     d3.dsv(";", "line_list_out.csv", d3.autoType)
@@ -103,15 +110,13 @@ function load_lines() {
               let toName = row.To;
               let power = row.P_MW;
 
-              // 🔁 Richtungswechsel bei negativer Leistung
+              // 🔁 Swap direction when power is negative
               if (power < 0) {
                   [fromName, toName] = [toName, fromName];  // swap
-                  power = Math.abs(power); // positiv machen
+                  power = Math.abs(power); // to positive
               }
-
               const lineName = row.Line_Name;
               const lineAbbrev = row.Line_Abbreviation;
-
               const fromStation = substations.find(s => s.name === fromName);
               const toStation = substations.find(s => s.name === toName);
               console.log(`→ ${fromName} → ${toName} | P = ${power}`);
@@ -119,7 +124,6 @@ function load_lines() {
               let waypoints = [];
               if (row.Waypoints) {
                   let raw = row.Waypoints.includes("|") ? row.Waypoints.split("|") : [row.Waypoints];
-
                   waypoints = raw.map(pair => {
                       let [origX, origY] = pair.split(",").map(Number);
                       let x = map(origX, minX, maxX, 50, gridWidth);
@@ -143,14 +147,14 @@ function load_lines() {
               }
           });
 
-            console.log("✅ Parsed lines:", lines);
+            console.log("✅ Lines parsed and assigned to layers.");
         })
         .catch(function (error) {
             console.error("❌ Error loading lines CSV:", error);
         });
 }
 
-
+// setup function for drawing
 function setup() {
     noStroke();
     createCanvas(canvasWidth, canvasHeight);
@@ -173,14 +177,13 @@ function setup() {
 //     });
 // }
 
-
+// draw function -- this function is called repeatedly to render the visualization
 function draw() {
     background(colorBackground);
-
     push();
-    tint(255, 255, 255, 255);  
+    // tint(255, 255, 255, 255);  
     image(BKWmapImg, 0, 50, mapWidth*BKWmapImgscale, mapHeight*BKWmapImgscale);  
-    noTint();  
+    // noTint();  
     pop();
     if (substations.length === 0) {
         text("Loading data...", width / 2, height / 2);
@@ -214,55 +217,95 @@ function draw() {
               endShape();
          });
       
-        // Particle generation
-        noStroke();
-        if (frameCount % 20 === 0) {
-            layer.lines.forEach(l => {
-              for (let i = 0; i < l.power / 20; i++) {
 
-                const path = [l.from, ...(l.waypoints || []), l.to];
 
-                layer.particles.push({
-                  x: path[0].x,
-                  y: path[0].y,
-                  speed: random(0.1, 0.4),
-                  path: path,
-                  currentSegment: 0
-                });
+      //  Generate arrows as a stream: higher power = smaller gaps
+      noStroke();
+      layer.lines.forEach(l => {
+        let minInterval = 5;   // minimum frames between arrows (high power)
+        let maxInterval = 60;  // maximum frames between arrows (low power)
+        let interval = maxInterval - (maxInterval - minInterval) * (l.power / maxPower);
+        interval = constrain(interval, minInterval, maxInterval);
+        if (frameCount % Math.round(interval) === 0) {
+          arrows.push({
+            x: l.from.x,
+            y: l.from.y,
+            speed: .2 + (l.power / maxPower) * 1.5, // speed based on power
+            angle: atan2(l.to.y - l.from.y, l.to.x - l.from.x),
+            targetX: l.to.x,
+            targetY: l.to.y
+          });
+        }
+      });
+        
+        // Update and draw arrows
+          for (let i = arrows.length - 1; i >= 0; i--) {
+              let a = arrows[i];
+              a.x += cos(a.angle) * a.speed;
+              a.y += sin(a.angle) * a.speed;
+              
+              push();
+              translate(a.x, a.y);
+              rotate(a.angle);
+              fill(0, 255, 0, 10);
+              triangle(-2.5, -2.5, -2.5, 2.5, 2.5, 0); // Arrow shape
+              pop();
+              
+              // Remove arrows that reach their target
+              if (dist(a.x, a.y, a.targetX, a.targetY) < 5) {
+                  arrows.splice(i, 1);
+              }
+          }
+
+        // // Particle generation
+        // noStroke();
+        // if (frameCount % 20 === 0) {
+        //     layer.lines.forEach(l => {
+        //       for (let i = 0; i < l.power / 20; i++) {
+
+        //         const path = [l.from, ...(l.waypoints || []), l.to];
+
+        //         layer.particles.push({
+        //           x: path[0].x,
+        //           y: path[0].y,
+        //           speed: random(0.1, 0.4),
+        //           path: path,
+        //           currentSegment: 0
+        //         });
                 
-              }
-            });
-          }
-1          
+        //       }
+        //     });
+        //   }
+        
       
-        for (let i = layer.particles.length - 1; i >= 0; i--) {
-              let p = layer.particles[i];
+        // for (let i = layer.particles.length - 1; i >= 0; i--) {
+        //       let p = layer.particles[i];
 
-              // Get current segment
-              let start = p.path[p.currentSegment];
-              let end   = p.path[p.currentSegment + 1];
+        //       // Get current segment
+        //       let start = p.path[p.currentSegment];
+        //       let end   = p.path[p.currentSegment + 1];
               
-              if (!end) {
-                // Reached end of path
-                layer.particles.splice(i, 1);
-                continue;
-              }
+        //       if (!end) {
+        //         // Reached end of path
+        //         layer.particles.splice(i, 1);
+        //         continue;
+        //       }
               
-              let angle = atan2(end.y - p.y, end.x - p.x);
-              p.x += cos(angle) * p.speed;
-              p.y += sin(angle) * p.speed;
+        //       let angle = atan2(end.y - p.y, end.x - p.x);
+        //       p.x += cos(angle) * p.speed;
+        //       p.y += sin(angle) * p.speed;
               
-              // If close to end of segment, move to next segment
-              if (dist(p.x, p.y, end.x, end.y) < 1) {
-                p.currentSegment++;
-              }
+        //       // If close to end of segment, move to next segment
+        //       if (dist(p.x, p.y, end.x, end.y) < 1) {
+        //         p.currentSegment++;
+        //       }
 
-              // drawingContext.shadowBlur = 15;
-              // drawingContext.shadowColor = color(0, 255, 0, 255);
+        //       // drawingContext.shadowBlur = 15;
+        //       // drawingContext.shadowColor = color(0, 255, 0, 255);
     
-              fill(255, 255, 0, 180);
-              ellipse(p.x, p.y, 4, 4);
-          }
+        //       fill(255, 255, 0, 180);
+        //       ellipse(p.x, p.y, 4, 4);
+        //   }
           
         // Draw substations
         noStroke();
@@ -284,22 +327,25 @@ function draw() {
           // fill(subColor);
           // ellipse(sub.x, sub.y, size, size);
 
-          // Glow effect based on power
-          drawingContext.shadowBlur = 15;
-          let alpha = map(sub.power, 0, maxPower, 0, 255); // map(value, inMin, inMax, outMin, outMax)
-          drawingContext.shadowColor = color(255, 0, 0, alpha);
+          // // Glow effect based on power
+          // drawingContext.shadowBlur = 15;
+          // let alpha = map(sub.power, 0, maxPower, 0, 255); // map(value, inMin, inMax, outMin, outMax)
+          // drawingContext.shadowColor = color(255, 0, 0, alpha);
 
           fill(subColor);
           ellipse(sub.x, sub.y, size, size);
 
-          // Reset shadow for next elements
-          drawingContext.shadowBlur = 0;
+          // // Reset shadow for next elements
+          // drawingContext.shadowBlur = 0;
 
           fill(0);
           textAlign(CENTER, TOP);
-          textSize(4);
-          text(sub.name, sub.x, sub.y + size / 2 + 2);
+          textSize(8);
+          text(sub.name, sub.x, sub.y + size / 2 );
         });
+
+  
+
       }
       
 
@@ -322,41 +368,7 @@ function draw() {
     //     }
     // }    
  
-/* // Generate new arrows based on power value
-    noStroke();
-    lines.forEach(l => {
-        for (let i = 1; i < l.power; i++) {
-            if (frameCount % 20 === 0) {
-                arrows.push({
-                    x: l.from.x,
-                    y: l.from.y,
-                    speed: 1,
-                    angle: atan2(l.to.y - l.from.y, l.to.x - l.from.x),
-                    targetX: l.to.x,
-                    targetY: l.to.y
-                });
-            }
-        }
-    });
-  
-  // Update and draw arrows
-    for (let i = arrows.length - 1; i >= 0; i--) {
-        let a = arrows[i];
-        a.x += cos(a.angle) * a.speed;
-        a.y += sin(a.angle) * a.speed;
         
-        push();
-        translate(a.x, a.y);
-        rotate(a.angle);
-        fill(0, 255, 0, 10);
-        triangle(-2.5, -2.5, -2.5, 2.5, 2.5, 0); // Arrow shape
-        pop();
-        
-        // Remove arrows that reach their target
-        if (dist(a.x, a.y, a.targetX, a.targetY) < 5) {
-            arrows.splice(i, 1);
-        }
-    }*/
     
      // Draw substations
     //  noStroke();
