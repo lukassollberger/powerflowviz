@@ -1,7 +1,10 @@
+
+
 let arrows = [];
 let particles = [];
 let substations = [];
 let lines = [];
+let P_table = [];
 console.log("D3.js Version:", d3.version); 
 let minX, maxX, minY, maxY;
 let aspect_ratio = 1  
@@ -12,6 +15,7 @@ let gridHeight = 900;
 let canvasWidth = mapWidth+100;
 let canvasHeight = mapHeight+100;
 let BKWmapImgscale = 1
+let average_power = null;
 
 // BKW Corporate Colors (RGB)
 let BKW_Light_Yellow = [255, 204, 0];      // HEX #ffcc00
@@ -52,26 +56,15 @@ let voltageLayers = {
   
 let maxPower = 0; 
 
-// let fetchButton;
-// let lastUpdateTime = "Unbekannt";
+let timestamp = "01-01-2024 00:45"; 
 
-let latestUpdateTime = "";
-
-// Load Data
 function preload() {
   BKWmapImg = loadImage("bkw_map.png");  // transparentes Bild laden
-  load_substations();
-  load_lines();
-  loadLastUpdateTime(); // 🔄 Load timestamp
-  klintFont = loadFont("fonts/KlintforBKW-Regular.ttf");
-
-
+  // p5.js: Load timeseries in preload, rest in setup. Otherwise timeseries data is not fully loaded when needed, due to the way p5.js handles the default preload function.
+  P_table = loadTable("Power_Vis_Data_P.csv", "csv", "header");  
+  // klintFont = loadFont("fonts/KlintforBKW-Regular.ttf");
 }
-function loadLastUpdateTime() {
-  loadStrings("latest_timestamp.txt", result => {
-    latestUpdateTime = `Letztes Update: ${result[0]}`;
-  });
-}
+
 function load_substations() {
     d3.dsv(";", "substations_list.csv", d3.autoType)
         .then(function (csv) {
@@ -101,81 +94,107 @@ function load_substations() {
         });
 }
 
-function load_lines() {
-    d3.dsv(";", "line_list_out.csv", d3.autoType)
-        .then(function (csv) {
-            csv.forEach(row => {
-              let type = row.Type;
-              let fromName = row.From;
-              let toName = row.To;
-              let power = row.P_MW;
+function load_lines(timestamp) {
+    d3.dsv(";", "line_list_out.csv").then(
+      function (linedata) {
+        let sum = 0;
+        let count = 0;
+        linedata.forEach(row => {
+          let type = row.Type;
+          let fromName = row.From;
+          let toName = row.To;
 
-              // 🔁 Swap direction when power is negative
-              if (power < 0) {
-                  [fromName, toName] = [toName, fromName];  // swap
-                  power = Math.abs(power); // to positive
-              }
-              const lineName = row.Line_Name;
-              const lineAbbrev = row.Line_Abbreviation;
-              const fromStation = substations.find(s => s.name === fromName);
-              const toStation = substations.find(s => s.name === toName);
-              console.log(`→ ${fromName} → ${toName} | P = ${power}`);
+          const lineName = row.Line_Name;
+          const lineAbbrev = row.Line_Abbreviation;
+          const fromStation = substations.find(s => s.name === fromName);
+          const toStation = substations.find(s => s.name === toName);
 
-              let waypoints = [];
-              if (row.Waypoints) {
-                  let raw = row.Waypoints.includes("|") ? row.Waypoints.split("|") : [row.Waypoints];
-                  waypoints = raw.map(pair => {
-                      let [origX, origY] = pair.split(",").map(Number);
-                      let x = map(origX, minX, maxX, 50, gridWidth);
-                      let y = map(origY, minY, maxY, 50, gridHeight);
-                      return { x, y };
-                  });
-              }
+          let power = getPowerFromTimeseries(timestamp, lineAbbrev);
+          if (!isNaN(power)) {
+            sum += power;
+            count++;
+          }
+          console.log(`(${lineAbbrev}), Power: ${power}`);
+          // 🔁 Swap direction when power is negative
+          if (power < 0) {
+            [fromName, toName] = [toName, fromName];  // swap
+            power = Math.abs(power); // to positive
+          }
 
-              if (fromStation && toStation) {
-                  if (voltageLayers[type]) {
-                      voltageLayers[type].lines.push({
-                          type,
-                          from: fromStation,
-                          to: toStation,
-                          power,
-                          lineName,
-                          lineAbbrev,
-                          waypoints
-                      });
-                  }
-              }
-          });
+          let waypoints = [];
+          if (row.Waypoints) {
+            let raw = row.Waypoints.includes("|") ? row.Waypoints.split("|") : [row.Waypoints];
+            waypoints = raw.map(pair => {
+              let [origX, origY] = pair.split(",").map(Number);
+              let x = map(origX, minX, maxX, 50, gridWidth);
+              let y = map(origY, minY, maxY, 50, gridHeight);
+              return { x, y };
+            });
+          }
 
-            console.log("✅ Lines parsed and assigned to layers.");
-        })
-        .catch(function (error) {
-            console.error("❌ Error loading lines CSV:", error);
+          if (fromStation && toStation) {
+            if (voltageLayers[type]) {
+              voltageLayers[type].lines.push({
+                type,
+                from: fromStation,
+                to: toStation,
+                power,
+                lineName,
+                lineAbbrev,
+                waypoints
+              });
+            }
+          }
         });
+
+        average_power = sum / count;
+        console.log(`Average power for timestamp ${timestamp}:`, average_power);
+        console.log(`COUNT ${timestamp}:`, count);
+        console.log(`SUM ${timestamp}:`, sum);
+
+        console.log("✅ Lines parsed and assigned to layers.");
+      })
+      .catch(function (error) {
+        console.error("❌ Error loading lines CSV:", error);
+      });
 }
 
-// setup function for drawing
+// Get power value from P_table for a given timestamp and line abbreviation
+function getPowerFromTimeseries(timestamp, lineAbbrev) {
+
+  // Find the column index for the line abbreviation
+  let colIndex = P_table.columns.indexOf(lineAbbrev);
+  if (colIndex === -1) {
+    console.warn('Line abbreviation not found:', lineAbbrev);
+    return null;
+  }
+  // Find the row index for the timestamp
+  for (let r = 0; r < P_table.getRowCount(); r++) {
+    let ts = P_table.getString(r, 0); // get timestamp from first column
+    if (ts === timestamp) {
+      return P_table.getNum(r, colIndex);
+    }
+  }
+  console.warn('Timestamp not found:', timestamp);
+  return null;
+}
+
+
+// setup function 
 function setup() {
+    // P_table = d3.dsv(",", "Power_Vis_Data_P.csv")  // optinal if time: check if you can load csv with d3 here instead of p5 loadTable
+
+    console.log(P_table.getColumnCount() + ' total columns in table');  // check if table is loaded correctly
+    
+    // Load substation and line data
+    load_substations();     // load substation data in setup after power timeseries is fully loaded in preload()
+    load_lines(timestamp);  // load line data in setup after power timeseries is fully loaded in preload()
+
+    // Set up canvas
     noStroke();
     createCanvas(canvasWidth, canvasHeight);
 }
 
-// function fetchLatestData() {
-//   fetchButton.html("⏳ Loading...");
-  
-//   // Call the Python script
-//   fetch("http://localhost:5000/run-script")  // Adjust if needed
-//     .then(response => response.json())
-//     .then(data => {
-//       console.log("✅ Script executed:", data);
-//       fetchButton.html("🔄 Fetch latest data");
-//       loadLastUpdateTime();
-//     })
-//     .catch(error => {
-//       console.error("❌ Error running script:", error);
-//       fetchButton.html("⚠️ Error");
-//     });
-// }
 
 // draw function -- this function is called repeatedly to render the visualization
 function draw() {
@@ -219,93 +238,93 @@ function draw() {
       
 
 
-      //  Generate arrows as a stream: higher power = smaller gaps
-      noStroke();
-      layer.lines.forEach(l => {
-        let minInterval = 5;   // minimum frames between arrows (high power)
-        let maxInterval = 60;  // maximum frames between arrows (low power)
-        let interval = maxInterval - (maxInterval - minInterval) * (l.power / maxPower);
-        interval = constrain(interval, minInterval, maxInterval);
-        if (frameCount % Math.round(interval) === 0) {
-          arrows.push({
-            x: l.from.x,
-            y: l.from.y,
-            speed: .2 + (l.power / maxPower) * 1.5, // speed based on power
-            angle: atan2(l.to.y - l.from.y, l.to.x - l.from.x),
-            targetX: l.to.x,
-            targetY: l.to.y
-          });
-        }
-      });
+      // //  Generate arrows as a stream: higher power = smaller gaps
+      // noStroke();
+      // layer.lines.forEach(l => {
+      //   let minInterval = 5;   // minimum frames between arrows (high power)
+      //   let maxInterval = 60;  // maximum frames between arrows (low power)
+      //   let interval = maxInterval - (maxInterval - minInterval) * (l.power / maxPower);
+      //   interval = constrain(interval, minInterval, maxInterval);
+      //   if (frameCount % Math.round(interval) === 0) {
+      //     arrows.push({
+      //       x: l.from.x,
+      //       y: l.from.y,
+      //       speed: .2 + (l.power / maxPower) * 1.5, // speed based on power
+      //       angle: atan2(l.to.y - l.from.y, l.to.x - l.from.x),
+      //       targetX: l.to.x,
+      //       targetY: l.to.y
+      //     });
+      //   }
+      // });
         
-        // Update and draw arrows
-          for (let i = arrows.length - 1; i >= 0; i--) {
-              let a = arrows[i];
-              a.x += cos(a.angle) * a.speed;
-              a.y += sin(a.angle) * a.speed;
+      //   // Update and draw arrows
+      //     for (let i = arrows.length - 1; i >= 0; i--) {
+      //         let a = arrows[i];
+      //         a.x += cos(a.angle) * a.speed;
+      //         a.y += sin(a.angle) * a.speed;
               
-              push();
-              translate(a.x, a.y);
-              rotate(a.angle);
-              fill(0, 255, 0, 10);
-              triangle(-2.5, -2.5, -2.5, 2.5, 2.5, 0); // Arrow shape
-              pop();
+      //         push();
+      //         translate(a.x, a.y);
+      //         rotate(a.angle);
+      //         fill(0, 255, 0, 10);
+      //         triangle(-2.5, -2.5, -2.5, 2.5, 2.5, 0); // Arrow shape
+      //         pop();
               
-              // Remove arrows that reach their target
-              if (dist(a.x, a.y, a.targetX, a.targetY) < 5) {
-                  arrows.splice(i, 1);
-              }
-          }
+      //         // Remove arrows that reach their target
+      //         if (dist(a.x, a.y, a.targetX, a.targetY) < 5) {
+      //             arrows.splice(i, 1);
+      //         }
+      //     }
 
-        // // Particle generation
-        // noStroke();
-        // if (frameCount % 20 === 0) {
-        //     layer.lines.forEach(l => {
-        //       for (let i = 0; i < l.power / 20; i++) {
+        // Particle generation
+        noStroke();
+        if (frameCount % 20 === 0) {
+            layer.lines.forEach(l => {
+              for (let i = 0; i < l.power / 20; i++) {
 
-        //         const path = [l.from, ...(l.waypoints || []), l.to];
+                const path = [l.from, ...(l.waypoints || []), l.to];
 
-        //         layer.particles.push({
-        //           x: path[0].x,
-        //           y: path[0].y,
-        //           speed: random(0.1, 0.4),
-        //           path: path,
-        //           currentSegment: 0
-        //         });
+                layer.particles.push({
+                  x: path[0].x,
+                  y: path[0].y,
+                  speed: random(0.1, 0.4),
+                  path: path,
+                  currentSegment: 0
+                });
                 
-        //       }
-        //     });
-        //   }
+              }
+            });
+          }
         
       
-        // for (let i = layer.particles.length - 1; i >= 0; i--) {
-        //       let p = layer.particles[i];
+        for (let i = layer.particles.length - 1; i >= 0; i--) {
+              let p = layer.particles[i];
 
-        //       // Get current segment
-        //       let start = p.path[p.currentSegment];
-        //       let end   = p.path[p.currentSegment + 1];
+              // Get current segment
+              let start = p.path[p.currentSegment];
+              let end   = p.path[p.currentSegment + 1];
               
-        //       if (!end) {
-        //         // Reached end of path
-        //         layer.particles.splice(i, 1);
-        //         continue;
-        //       }
+              if (!end) {
+                // Reached end of path
+                layer.particles.splice(i, 1);
+                continue;
+              }
               
-        //       let angle = atan2(end.y - p.y, end.x - p.x);
-        //       p.x += cos(angle) * p.speed;
-        //       p.y += sin(angle) * p.speed;
+              let angle = atan2(end.y - p.y, end.x - p.x);
+              p.x += cos(angle) * p.speed;
+              p.y += sin(angle) * p.speed;
               
-        //       // If close to end of segment, move to next segment
-        //       if (dist(p.x, p.y, end.x, end.y) < 1) {
-        //         p.currentSegment++;
-        //       }
+              // If close to end of segment, move to next segment
+              if (dist(p.x, p.y, end.x, end.y) < 1) {
+                p.currentSegment++;
+              }
 
-        //       // drawingContext.shadowBlur = 15;
-        //       // drawingContext.shadowColor = color(0, 255, 0, 255);
+              // drawingContext.shadowBlur = 15;
+              // drawingContext.shadowColor = color(0, 255, 0, 255);
     
-        //       fill(255, 255, 0, 180);
-        //       ellipse(p.x, p.y, 4, 4);
-        //   }
+              fill(255, 255, 0, 180);
+              ellipse(p.x, p.y, 4, 4);
+          }
           
         // Draw substations
         noStroke();
@@ -398,6 +417,48 @@ function draw() {
     drawLegend();
     drawTitle();
 
+
+
+    // ---------------- Plot timerseries --------------------
+    let colName = "LTH 1BACBRI"; // Change to your desired column
+    let days = 7
+    let timevalues = 96
+    let n = days * timevalues;   
+
+    let margin = 50;
+
+    // Find min/max for scaling
+    let minVal = Infinity, maxVal = -Infinity;
+    for (let r = 0; r < n; r++) {
+      let val = P_table.getNum(r, colName);
+      if (val < minVal) minVal = val;
+      if (val > maxVal) maxVal = val;
+    }
+
+    // Draw line plot
+    noFill();
+    strokeWeight(4);
+    beginShape();
+    for (let d = 1; d < days+1; d++) {
+        for (let t = 0; t < timevalues; t++) {
+          let x1 = map(t, 0, n - 1, margin, canvasWidth - margin);
+          let y1 = d*50
+          let x2 = map(t, 0, n - 1, margin, canvasWidth - margin);
+          let y2 = d*50 + 50;
+          let val = P_table.getNum(t*d, colName);
+          // Map val to a color gradient (e.g., blue to red)
+          let tmp = map(val, minVal, maxVal, 0, 1);
+          let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
+          stroke(col);
+
+          line(x1, y1, x2, y2);
+        }
+    }
+
+    endShape();
+    // -----------------------------------------------
+
+    
     // Draw Mouse Pos onto screen
     if (substations.length > 0) {
       // Convert canvas to original coordinates
@@ -427,7 +488,12 @@ function draw() {
     fill(255);
     textAlign(LEFT, BOTTOM);
     textSize(10);
-    text(latestUpdateTime, 20, canvasHeight - 10);
+    text(timestamp, 20, canvasHeight - 10);
+
+    textSize(10);
+    fill(255);
+    textAlign(RIGHT, BOTTOM);
+    text(`Average Power: ${average_power !== null ? average_power.toFixed(2) : "N/A"}`, canvasWidth - 20, canvasHeight - 10);
 }
 
 function keyPressed() {
@@ -467,7 +533,7 @@ function keyPressed() {
   function drawTitle() {
     textAlign(CENTER, TOP);
     textSize(20);
-    textFont(klintFont);
+    // textFont(klintFont);
     fill(255);
     text("Verteilnetze BKW und Umgebung inkl. Übertragungsnetz", canvasWidth / 2, 10);
   }
