@@ -2,6 +2,10 @@
 
 let arrows = [];
 let particles = [];
+let colName = "LTH 1BACBRI"; // Will be set by mouse click
+let animatedBarLens = [];
+let targetBarLens = [];
+let lastColName = colName;
 let substations = [];
 let lines = [];
 let P_table = [];
@@ -12,8 +16,8 @@ let mapWidth = 800;
 let mapHeight = 800;
 let gridWidth = 800;
 let gridHeight = 900;
-let canvasWidth = mapWidth+100;
-let canvasHeight = mapHeight+100;
+let canvasWidth = mapWidth+1120;  // 1920 Total
+let canvasHeight = mapHeight+250; // 1050 Total
 let BKWmapImgscale = 1
 let average_power = null;
 
@@ -57,12 +61,15 @@ let voltageLayers = {
 let maxPower = 0; 
 
 let timestamp = "01-01-2024 00:45"; 
+let timestampInput;
 
 function preload() {
   BKWmapImg = loadImage("bkw_map.png");  // transparentes Bild laden
   // p5.js: Load timeseries in preload, rest in setup. Otherwise timeseries data is not fully loaded when needed, due to the way p5.js handles the default preload function.
   P_table = loadTable("Power_Vis_Data_P.csv", "csv", "header");  
   // klintFont = loadFont("fonts/KlintforBKW-Regular.ttf");
+  load_substations();     // load substation data in preload
+
 }
 
 function load_substations() {
@@ -187,12 +194,31 @@ function setup() {
     console.log(P_table.getColumnCount() + ' total columns in table');  // check if table is loaded correctly
     
     // Load substation and line data
-    load_substations();     // load substation data in setup after power timeseries is fully loaded in preload()
     load_lines(timestamp);  // load line data in setup after power timeseries is fully loaded in preload()
 
     // Set up canvas
     noStroke();
     createCanvas(canvasWidth, canvasHeight);
+
+    // Create timestamp input box (only once)
+    if (!timestampInput) {
+      timestampInput = createInput(timestamp);
+      timestampInput.position(20, 20);
+      timestampInput.size(180);
+      timestampInput.input(onTimestampChange);
+    }
+// Callback for timestamp input
+function onTimestampChange() {
+  let newTimestamp = timestampInput.value();
+  if (newTimestamp !== timestamp) {
+    timestamp = newTimestamp;
+    // Clear lines for all layers before reload
+    for (let voltage in voltageLayers) {
+      voltageLayers[voltage].lines = [];
+    }
+    setup(); // recall setup to reload data
+  }
+}
 }
 
 
@@ -236,7 +262,7 @@ function draw() {
               endShape();
          });
       
-
+      
 
       // //  Generate arrows as a stream: higher power = smaller gaps
       // noStroke();
@@ -420,12 +446,11 @@ function draw() {
 
 
     // ---------------- Plot timerseries --------------------
-    let colName = "LTH 1BACBRI"; // Change to your desired column
-    let days = 7
-    let timevalues = 96
-    let n = days * timevalues;   
-
+    let days = 7;
+    let timevalues = 96;
+    let n = days * timevalues;
     let margin = 50;
+
 
     // Find min/max for scaling
     let minVal = Infinity, maxVal = -Infinity;
@@ -439,13 +464,15 @@ function draw() {
     noFill();
     strokeWeight(4);
     beginShape();
+    let row = 0;
     for (let d = 1; d < days+1; d++) {
         for (let t = 0; t < timevalues; t++) {
-          let x1 = map(t, 0, n - 1, margin, canvasWidth - margin);
+          let x1 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
           let y1 = d*50
-          let x2 = map(t, 0, n - 1, margin, canvasWidth - margin);
+          let x2 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
           let y2 = d*50 + 50;
-          let val = P_table.getNum(t*d, colName);
+          let val = P_table.getNum(row, colName);
+          row = row+1
           // Map val to a color gradient (e.g., blue to red)
           let tmp = map(val, minVal, maxVal, 0, 1);
           let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
@@ -454,11 +481,59 @@ function draw() {
           line(x1, y1, x2, y2);
         }
     }
-
     endShape();
-    // -----------------------------------------------
 
-    
+    // circle(canvasWidth*0.75, canvasHeight*0.6, 400);
+    // circle(canvasWidth*0.75, canvasHeight*0.6, 300);
+    // circle(canvasWidth*0.75, canvasHeight*0.6, 200);
+
+    // --- Circular bar plot with animation ---
+    let cx = canvasWidth * 0.75;
+    let cy = canvasHeight * 0.6;
+    let radius = 180;
+    let barMaxLen = 120;
+    let barWidth = 2;
+    let nBars = n; // one bar per time step
+    let angleStep = TWO_PI / nBars;
+
+    // If colName changed, update targetBarLens
+    if (colName !== lastColName || targetBarLens.length !== nBars) {
+      targetBarLens = [];
+      for (let i = 0; i < nBars; i++) {
+        let val = P_table.getNum(i, colName);
+        let barLen = map(val, minVal, maxVal, 10, barMaxLen);
+        targetBarLens.push(barLen);
+      }
+      // If first time, set animatedBarLens instantly
+      if (animatedBarLens.length !== nBars) {
+        animatedBarLens = targetBarLens.slice();
+      }
+      lastColName = colName;
+    }
+    // Animate bar lengths
+    for (let i = 0; i < nBars; i++) {
+      animatedBarLens[i] = lerp(animatedBarLens[i], targetBarLens[i], 0.15); // smooth step
+      let val = P_table.getNum(i, colName);
+      let tmp = map(val, minVal, maxVal, 0, 1);
+      let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
+      let angle = -HALF_PI + i * angleStep;
+      let x0 = cx + cos(angle) * radius;
+      let y0 = cy + sin(angle) * radius;
+      let x1 = cx + cos(angle) * (radius + animatedBarLens[i]);
+      let y1 = cy + sin(angle) * (radius + animatedBarLens[i]);
+      stroke(col);
+      strokeWeight(barWidth);
+      line(x0, y0, x1, y1);
+    }
+    // Draw circle outline
+    noFill();
+    stroke(200);
+    strokeWeight(2);
+    ellipse(cx, cy, radius * 2, radius * 2);
+
+    // -----------------------------------------------
+    noStroke();
+
     // Draw Mouse Pos onto screen
     if (substations.length > 0) {
       // Convert canvas to original coordinates
@@ -537,5 +612,40 @@ function keyPressed() {
     fill(255);
     text("Verteilnetze BKW und Umgebung inkl. Übertragungsnetz", canvasWidth / 2, 10);
   }
+
+
   
-  
+// Detect line click and update colName for timeseries plot
+function mousePressed() {
+  let minDist = 10; // px threshold for click
+  let found = false;
+  console.log("Mouse pressed at:", mouseX, mouseY);
+  for (let voltage in voltageLayers) {
+    const layer = voltageLayers[voltage];
+    layer.lines.forEach(l => {
+      // Check direct line (from-to)
+      let pts = [l.from, ...(l.waypoints || []), l.to];
+      for (let i = 0; i < pts.length - 1; i++) {
+        let x0 = pts[i].x;
+        let y0 = pts[i].y;
+        let x1 = pts[i+1].x;
+        let y1 = pts[i+1].y;
+        // Closest point on segment
+        let dx = x1 - x0;
+        let dy = y1 - y0;
+        let t = ((mouseX - x0) * dx + (mouseY - y0) * dy) / (dx*dx + dy*dy);
+        t = constrain(t, 0, 1);
+        let px = x0 + t * dx;
+        let py = y0 + t * dy;
+        let d = dist(mouseX, mouseY, px, py);
+        if (d < minDist) {
+          colName = l.lineAbbrev;
+          found = true;
+        }
+      }
+    });
+  }
+  if (found) {
+    print('Selected line:', colName);
+  }
+}
