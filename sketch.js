@@ -62,6 +62,9 @@ let maxPower = 0;
 
 let timestamp = "01-01-2024 00:45"; 
 let timestampInput;
+let timelineRect = { x: 220, y:  canvasHeight - 40, w: canvasWidth - 260, h: 24 };
+let timelineActive = false;
+   
 
 function preload() {
   BKWmapImg = loadImage("bkw_map.png");  // transparentes Bild laden
@@ -110,21 +113,20 @@ function load_lines(timestamp) {
           let type = row.Type;
           let fromName = row.From;
           let toName = row.To;
-
+          let fromStation = substations.find(s => s.name === fromName);
+          let toStation = substations.find(s => s.name === toName);
           const lineName = row.Line_Name;
           const lineAbbrev = row.Line_Abbreviation;
-          const fromStation = substations.find(s => s.name === fromName);
-          const toStation = substations.find(s => s.name === toName);
-
           let power = getPowerFromTimeseries(timestamp, lineAbbrev);
           if (!isNaN(power)) {
             sum += power;
             count++;
           }
-          console.log(`(${lineAbbrev}), Power: ${power}`);
-          // 🔁 Swap direction when power is negative
+          console.log(`(${lineAbbrev}), Power: ${power}`);         
+
+          // 🔁 Swap direction when power is negative (swap stations, not just names)
           if (power < 0) {
-            [fromName, toName] = [toName, fromName];  // swap
+            [fromStation, toStation] = [toStation, fromStation];
             power = Math.abs(power); // to positive
           }
 
@@ -201,24 +203,13 @@ function setup() {
     createCanvas(canvasWidth, canvasHeight);
 
     // Create timestamp input box (only once)
-    if (!timestampInput) {
-      timestampInput = createInput(timestamp);
-      timestampInput.position(20, 20);
-      timestampInput.size(180);
-      timestampInput.input(onTimestampChange);
-    }
-// Callback for timestamp input
-function onTimestampChange() {
-  let newTimestamp = timestampInput.value();
-  if (newTimestamp !== timestamp) {
-    timestamp = newTimestamp;
-    // Clear lines for all layers before reload
-    for (let voltage in voltageLayers) {
-      voltageLayers[voltage].lines = [];
-    }
-    setup(); // recall setup to reload data
-  }
-}
+    // if (!timestampInput) {
+    //   timestampInput = createInput(timestamp);
+    //   timestampInput.position(20, 20);
+    //   timestampInput.size(180);
+    //   timestampInput.input(onTimestampChange);
+    // }
+
 }
 
 
@@ -307,7 +298,6 @@ function draw() {
         if (frameCount % 20 === 0) {
             layer.lines.forEach(l => {
               for (let i = 0; i < l.power / 20; i++) {
-
                 const path = [l.from, ...(l.waypoints || []), l.to];
 
                 layer.particles.push({
@@ -532,7 +522,42 @@ function draw() {
     ellipse(cx, cy, radius * 2, radius * 2);
 
     // -----------------------------------------------
+
+
+   // --- Timeline rectangle for timestamp selection ---
+    fill(220, 220, 255, 180);
     noStroke();
+    rect(timelineRect.x, timelineRect.y, timelineRect.w, timelineRect.h, 8);
+
+    // Draw ticks and marker
+    let nTimestamps = P_table.getRowCount();
+    let tsIdx = 0;
+    for (let r = 0; r < nTimestamps; r++) {
+      if (P_table.getString(r, 0) === timestamp) {
+        tsIdx = r;
+        break;
+      }
+    }
+    // Marker for current timestamp
+    let markerX = map(tsIdx, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
+    stroke(0, 120, 255);
+    strokeWeight(3);
+    line(markerX, timelineRect.y, markerX, timelineRect.y + timelineRect.h);
+    noStroke();
+    fill(0);
+    textAlign(CENTER, TOP);
+    textSize(12);
+    text(timestamp, markerX, timelineRect.y + timelineRect.h + 2);
+
+    // Optionally, draw ticks every 24 steps (1 per day for 15-min data)
+    stroke(100, 100, 180, 120);
+    strokeWeight(1);
+    for (let i = 0; i < nTimestamps; i += 96) {
+      let tickX = map(i, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
+      line(tickX, timelineRect.y + timelineRect.h - 6, tickX, timelineRect.y + timelineRect.h);
+    }
+    noStroke();
+
 
     // Draw Mouse Pos onto screen
     if (substations.length > 0) {
@@ -617,6 +642,33 @@ function keyPressed() {
   
 // Detect line click and update colName for timeseries plot
 function mousePressed() {
+  // Timeline interaction
+  if (
+    mouseY > timelineRect.y && mouseY < timelineRect.y + timelineRect.h &&
+    mouseX > timelineRect.x && mouseX < timelineRect.x + timelineRect.w
+  ) {
+    let nTimestamps = P_table.getRowCount();
+    let idx = Math.round(map(mouseX, timelineRect.x, timelineRect.x + timelineRect.w, 0, nTimestamps - 1));
+    idx = constrain(idx, 0, nTimestamps - 1);
+    let newTimestamp = P_table.getString(idx, 0);
+    if (newTimestamp !== timestamp) {
+      timestamp = newTimestamp;
+      // Clear lines and particles for all voltage layers
+      for (let voltage in voltageLayers) {
+        voltageLayers[voltage].lines = [];
+        voltageLayers[voltage].particles = [];
+      }
+      setup();
+    }
+    timelineActive = true;
+    return;
+  }
+  
+
+
+
+
+  // Check line clicks  
   let minDist = 10; // px threshold for click
   let found = false;
   console.log("Mouse pressed at:", mouseX, mouseY);
@@ -648,4 +700,8 @@ function mousePressed() {
   if (found) {
     print('Selected line:', colName);
   }
+
+
+  
+  
 }
