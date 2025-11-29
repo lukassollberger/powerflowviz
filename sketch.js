@@ -21,6 +21,14 @@ let canvasHeight = mapHeight+250; // 1050 Total
 let BKWmapImgscale = 1
 let average_power = null;
 
+// Global arrays for min, max, average per row (for later plotting)
+let minPerRow = [];
+let maxPerRow = [];
+let averagePerRow = [];
+let globalminVal = Infinity;
+let globalmaxVal = -Infinity;
+let nTimestamps;  // Declare nTimestamps globally
+
 // BKW Corporate Colors (RGB)
 let BKW_Light_Yellow = [255, 204, 0];      // HEX #ffcc00
 let BKW_Light_Green = [214, 215, 0];       // HEX #d6d700
@@ -62,14 +70,16 @@ let maxPower = 0;
 
 let timestamp = "01-01-2024 00:45"; 
 let timestampInput;
-let timelineRect = { x: 220, y:  canvasHeight - 40, w: canvasWidth - 260, h: 24 };
+let timelineRect = { x: 140, y:  canvasHeight - 100, w: canvasWidth - 260, h: 80 };
 let timelineActive = false;
    
 
 function preload() {
   BKWmapImg = loadImage("bkw_map.png");  // transparentes Bild laden
   // p5.js: Load timeseries in preload, rest in setup. Otherwise timeseries data is not fully loaded when needed, due to the way p5.js handles the default preload function.
-  P_table = loadTable("Power_Vis_Data_P.csv", "csv", "header");  
+  P_table = loadTable("Power_Vis_Data_Random.csv", "csv", "header");  
+
+  
   // klintFont = loadFont("fonts/KlintforBKW-Regular.ttf");
   load_substations();     // load substation data in preload
 
@@ -105,7 +115,7 @@ function load_substations() {
 }
 
 function load_lines(timestamp) {
-    d3.dsv(";", "line_list_out.csv").then(
+    d3.dsv(";", "line_list.csv").then(
       function (linedata) {
         let sum = 0;
         let count = 0;
@@ -209,6 +219,37 @@ function setup() {
     //   timestampInput.size(180);
     //   timestampInput.input(onTimestampChange);
     // }
+
+    // Simple: min, max, average per row
+    minPerRow = [];
+    maxPerRow = [];
+    averagePerRow = [];
+    for (let r = 0; r < P_table.getRowCount(); r++) {
+      let vals = [];
+      for (let c = 1; c < P_table.getColumnCount(); c++) {
+        let v = P_table.getNum(r, c);
+        if (!isNaN(v)) vals.push(v);
+      }
+      if (vals.length > 0) {
+        minPerRow[r] = Math.min(...vals);
+        maxPerRow[r] = Math.max(...vals);
+        averagePerRow[r] = vals.reduce((a, b) => a + b, 0) / vals.length;
+
+        if (minPerRow[r] < globalminVal) globalminVal = minPerRow[r];
+        if (maxPerRow[r] > globalmaxVal) globalmaxVal = maxPerRow[r];
+
+
+      } else {
+        minPerRow[r] = maxPerRow[r] = averagePerRow[r] = NaN;
+      }
+    }
+
+
+    nTimestamps = P_table.getRowCount();
+
+    console.log('minPerRow:', minPerRow);
+    console.log('maxPerRow:', maxPerRow);
+    console.log('averagePerRow:', averagePerRow);
 
 }
 
@@ -373,9 +414,9 @@ function draw() {
           // // Reset shadow for next elements
           // drawingContext.shadowBlur = 0;
 
-          fill(0);
           textAlign(CENTER, TOP);
           textSize(8);
+          fill(255);
           text(sub.name, sub.x, sub.y + size / 2 );
         });
 
@@ -443,94 +484,42 @@ function draw() {
 
 
     // Find min/max for scaling
-    let minVal = Infinity, maxVal = -Infinity;
+    let lineminVal = Infinity, linemaxVal = -Infinity;
     for (let r = 0; r < n; r++) {
       let val = P_table.getNum(r, colName);
-      if (val < minVal) minVal = val;
-      if (val > maxVal) maxVal = val;
+      if (val < lineminVal) lineminVal = val;
+      if (val > linemaxVal) linemaxVal = val;
     }
 
-    // Draw line plot
-    noFill();
-    strokeWeight(4);
-    beginShape();
-    let row = 0;
-    for (let d = 1; d < days+1; d++) {
-        for (let t = 0; t < timevalues; t++) {
-          let x1 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
-          let y1 = d*50
-          let x2 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
-          let y2 = d*50 + 50;
-          let val = P_table.getNum(row, colName);
-          row = row+1
-          // Map val to a color gradient (e.g., blue to red)
-          let tmp = map(val, minVal, maxVal, 0, 1);
-          let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
-          stroke(col);
+    // // Draw line plot
+    // noFill();
+    // strokeWeight(4);
+    // beginShape();
+    // let row = 0;
+    // for (let d = 1; d < days+1; d++) {
+    //     for (let t = 0; t < timevalues; t++) {
+    //       let x1 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
+    //       let y1 = d*50
+    //       let x2 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
+    //       let y2 = d*50 + 50;
+    //       let val = P_table.getNum(row, colName);
+    //       row = row+1
+    //       // Map val to a color gradient (e.g., blue to red)
+    //       let tmp = map(val, lineminVal, linemaxVal, 0, 1);
+    //       let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
+    //       stroke(col);
 
-          line(x1, y1, x2, y2);
-        }
-    }
-    endShape();
+    //       line(x1, y1, x2, y2);
+    //     }
+    // }
+    // endShape()
 
-    // circle(canvasWidth*0.75, canvasHeight*0.6, 400);
-    // circle(canvasWidth*0.75, canvasHeight*0.6, 300);
-    // circle(canvasWidth*0.75, canvasHeight*0.6, 200);
-
-    // --- Circular bar plot with animation ---
-    let cx = canvasWidth * 0.75;
-    let cy = canvasHeight * 0.6;
-    let radius = 180;
-    let barMaxLen = 120;
-    let barWidth = 2;
-    let nBars = n; // one bar per time step
-    let angleStep = TWO_PI / nBars;
-
-    // If colName changed, update targetBarLens
-    if (colName !== lastColName || targetBarLens.length !== nBars) {
-      targetBarLens = [];
-      for (let i = 0; i < nBars; i++) {
-        let val = P_table.getNum(i, colName);
-        let barLen = map(val, minVal, maxVal, 10, barMaxLen);
-        targetBarLens.push(barLen);
-      }
-      // If first time, set animatedBarLens instantly
-      if (animatedBarLens.length !== nBars) {
-        animatedBarLens = targetBarLens.slice();
-      }
-      lastColName = colName;
-    }
-    // Animate bar lengths
-    for (let i = 0; i < nBars; i++) {
-      animatedBarLens[i] = lerp(animatedBarLens[i], targetBarLens[i], 0.15); // smooth step
-      let val = P_table.getNum(i, colName);
-      let tmp = map(val, minVal, maxVal, 0, 1);
-      let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
-      let angle = -HALF_PI + i * angleStep;
-      let x0 = cx + cos(angle) * radius;
-      let y0 = cy + sin(angle) * radius;
-      let x1 = cx + cos(angle) * (radius + animatedBarLens[i]);
-      let y1 = cy + sin(angle) * (radius + animatedBarLens[i]);
-      stroke(col);
-      strokeWeight(barWidth);
-      line(x0, y0, x1, y1);
-    }
-    // Draw circle outline
-    noFill();
-    stroke(200);
-    strokeWeight(2);
-    ellipse(cx, cy, radius * 2, radius * 2);
-
-    // -----------------------------------------------
-
-
-   // --- Timeline rectangle for timestamp selection ---
-    fill(220, 220, 255, 180);
+    // --- Timeline rectangle for timestamp selection ---
+    fill(255, 255, 255, 150);
     noStroke();
-    rect(timelineRect.x, timelineRect.y, timelineRect.w, timelineRect.h, 8);
+    rect(timelineRect.x, timelineRect.y, timelineRect.w, timelineRect.h,2);
 
     // Draw ticks and marker
-    let nTimestamps = P_table.getRowCount();
     let tsIdx = 0;
     for (let r = 0; r < nTimestamps; r++) {
       if (P_table.getString(r, 0) === timestamp) {
@@ -558,6 +547,123 @@ function draw() {
     }
     noStroke();
 
+    // Draw line plot V2
+    // Draw min, average, and max lines at the bottom (timelineRect area)
+    noFill();
+    strokeWeight(2);
+    // Average line (orange)
+    stroke(255, 140, 0);
+    beginShape();
+    for (let r = 0; r < nTimestamps; r++) {
+      let x = map(r, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
+      let y = map(averagePerRow[r], globalminVal, globalmaxVal, timelineRect.y + timelineRect.h, timelineRect.y);
+      vertex(x, y);
+    }
+    endShape();
+    // Min line (blue)
+    stroke(0, 100, 255);
+    beginShape();
+    for (let r = 0; r < nTimestamps; r++) {
+      let x = map(r, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
+      let y = map(minPerRow[r], globalminVal, globalmaxVal, timelineRect.y + timelineRect.h, timelineRect.y);
+      vertex(x, y);
+    }
+    endShape();
+    // Max line (red)
+    stroke(255, 0, 0);
+    beginShape();
+    for (let r = 0; r < nTimestamps; r++) {
+      let x = map(r, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
+      let y = map(maxPerRow[r], globalminVal, globalmaxVal, timelineRect.y + timelineRect.h, timelineRect.y);
+      vertex(x, y);
+    }
+    endShape();
+    // -----------------------------------------------
+
+
+
+
+    // circle(canvasWidth*0.75, canvasHeight*0.6, 400);
+    // circle(canvasWidth*0.75, canvasHeight*0.6, 300);
+    // circle(canvasWidth*0.75, csanvasHeight*0.6, 200);
+
+    // --- Circular bar plot with animation ---
+    let cx = canvasWidth * 0.7;
+    let cy = canvasHeight * 0.5;
+    let radius = 280;
+    let barMaxLen = 120;
+    let barWidth = 2;
+    let nBars = n; // one bar per time step
+    let angleStep = TWO_PI / nBars;
+
+    // If colName changed, update targetBarLens
+    if (colName !== lastColName || targetBarLens.length !== nBars) {
+      targetBarLens = [];
+      for (let i = 0; i < nBars; i++) {
+        let val = P_table.getNum(i, colName);
+        let barLen = map(val, lineminVal, linemaxVal, 10, barMaxLen);
+        targetBarLens.push(barLen);
+      }
+      // If first time, set animatedBarLens instantly
+      if (animatedBarLens.length !== nBars) {
+        animatedBarLens = targetBarLens.slice();
+      }
+      lastColName = colName;
+    }
+    // Animate bar lengths
+    for (let i = 0; i < nBars; i++) {
+      animatedBarLens[i] = lerp(animatedBarLens[i], targetBarLens[i], 0.15); // smooth step
+      let val = P_table.getNum(i, colName);
+      let tmp = map(val, lineminVal, linemaxVal, 0, 1);
+      let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
+      let angle = -HALF_PI + i * angleStep;
+      let x0 = cx + cos(angle) * radius;
+      let y0 = cy + sin(angle) * radius;
+      let x1 = cx + cos(angle) * (radius + animatedBarLens[i]);
+      let y1 = cy + sin(angle) * (radius + animatedBarLens[i]);
+      stroke(col);
+      strokeWeight(barWidth);
+      line(x0, y0, x1, y1);
+    }
+    // Draw circle outline
+    noFill();
+    stroke(200);
+    strokeWeight(2);
+    ellipse(cx, cy, radius * 2, radius * 2);
+
+    // --- Add weekday names and ticks inside the circle ---
+    let weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    let daysInWeek = 7;
+    let timevaluesPerDay = timevalues;
+    let labelRadius = radius - 60;
+    let tickRadiusInner = radius - 100;
+    let tickRadiusOuter = radius - 10;
+    textAlign(CENTER, CENTER);
+    textSize(18);
+    fill(255);
+    stroke(180);
+    strokeWeight(2);
+    for (let d = 0; d < daysInWeek; d++) {
+      let angle = -HALF_PI + d * (TWO_PI / daysInWeek);
+      // Weekday label
+      let lx = cx + cos(angle+PI/7) * labelRadius;
+      let ly = cy + sin(angle+PI/7) * labelRadius;
+      noStroke();
+      text(weekdayNames[d], lx, ly);
+      // Tick
+      stroke(180);
+      let tx0 = cx + cos(angle) * tickRadiusInner;
+      let ty0 = cy + sin(angle) * tickRadiusInner;
+      let tx1 = cx + cos(angle) * tickRadiusOuter;
+      let ty1 = cy + sin(angle) * tickRadiusOuter;
+      line(tx0, ty0, tx1, ty1);
+    }
+    noStroke();
+    // -----------------------------------------------
+
+
+   
+
 
     // Draw Mouse Pos onto screen
     if (substations.length > 0) {
@@ -571,13 +677,13 @@ function draw() {
     
       // Draw background label
       fill(255, 255, 255, 200);
-      rect(mouseX + 10, mouseY, 100, 30, 5);
+      rect(mouseX+20, mouseY, 50, 30, 5);
     
       // Draw text
       fill(0);
       textSize(10);
-      text(`X: ${origX}`, mouseX + 15, mouseY + 10);
-      text(`Y: ${origY}`, mouseX + 15, mouseY + 22);
+      text(`X: ${origX}`, mouseX + 40, mouseY + 20);
+      text(`Y: ${origY}`, mouseX + 40, mouseY + 10);
     }
     
     // textSize(10);
