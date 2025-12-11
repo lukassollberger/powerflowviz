@@ -20,7 +20,7 @@ let canvasWidth = mapWidth+1120;  // 1920 Total
 let canvasHeight = mapHeight+250; // 1050 Total
 let BKWmapImgscale = 1
 let average_power = null;
-
+let FIRSTRUN = true;
 // Global arrays for min, max, average per row (for later plotting)
 let minPerRow = [];
 let maxPerRow = [];
@@ -115,7 +115,7 @@ function load_substations() {
 }
 
 function load_lines(timestamp) {
-    d3.dsv(";", "line_list.csv").then(
+    d3.dsv(";", "line_list_out.csv").then(
       function (linedata) {
         let sum = 0;
         let count = 0;
@@ -132,13 +132,7 @@ function load_lines(timestamp) {
             sum += power;
             count++;
           }
-          console.log(`(${lineAbbrev}), Power: ${power}`);         
-
-          // 🔁 Swap direction when power is negative (swap stations, not just names)
-          if (power < 0) {
-            [fromStation, toStation] = [toStation, fromStation];
-            power = Math.abs(power); // to positive
-          }
+          // console.log(`(${lineAbbrev}), Power: ${power}`);         
 
           let waypoints = [];
           if (row.Waypoints) {
@@ -149,6 +143,12 @@ function load_lines(timestamp) {
               let y = map(origY, minY, maxY, 50, gridHeight);
               return { x, y };
             });
+          }
+          // 🔁 Swap direction when power is negative (swap stations, not just names and waypoints)
+          if (power < 0) {
+            [fromStation, toStation] = [toStation, fromStation];
+            waypoints = waypoints.reverse();
+            power = Math.abs(power); // to positive
           }
 
           if (fromStation && toStation) {
@@ -203,7 +203,7 @@ function getPowerFromTimeseries(timestamp, lineAbbrev) {
 function setup() {
     // P_table = d3.dsv(",", "Power_Vis_Data_P.csv")  // optinal if time: check if you can load csv with d3 here instead of p5 loadTable
 
-    console.log(P_table.getColumnCount() + ' total columns in table');  // check if table is loaded correctly
+    // console.log(P_table.getColumnCount() + ' total columns in table');  // check if table is loaded correctly
     
     // Load substation and line data
     load_lines(timestamp);  // load line data in setup after power timeseries is fully loaded in preload()
@@ -244,18 +244,18 @@ function setup() {
       }
     }
 
-
     nTimestamps = P_table.getRowCount();
 
-    console.log('minPerRow:', minPerRow);
-    console.log('maxPerRow:', maxPerRow);
-    console.log('averagePerRow:', averagePerRow);
+    // console.log('minPerRow:', minPerRow);
+    // console.log('maxPerRow:', maxPerRow);
+    // console.log('averagePerRow:', averagePerRow);
 
 }
 
 
 // draw function -- this function is called repeatedly to render the visualization
 function draw() {
+
     background(colorBackground);
     push();
     // tint(255, 255, 255, 255);  
@@ -334,31 +334,118 @@ function draw() {
       //         }
       //     }
 
-        // Particle generation
-        noStroke();
-        if (frameCount % 20 === 0) {
-            layer.lines.forEach(l => {
-              for (let i = 0; i < l.power / 20; i++) {
-                const path = [l.from, ...(l.waypoints || []), l.to];
+        // // Particle generation
+                // // --- Wavy electricity lines visualization ---
+                // // For each line, draw several animated wavy lines to indicate power and direction
+                // layer.lines.forEach(l => {
+                //   let path = [l.from, ...(l.waypoints || []), l.to];
+                //   let totalLength = 0;
+                //   // Calculate total length of the path
+                //   for (let i = 0; i < path.length - 1; i++) {
+                //     totalLength += dist(path[i].x, path[i].y, path[i+1].x, path[i+1].y);
+                //   }
+                //   // Number of wavy lines proportional to power (min 1)
+                //   let nWaves = max(1, floor(l.power / 40));
+                //   // Color: yellow (low) to white (high)
+                //   let c = lerpColor(color(255, 255, 0), color(255, 255, 255), constrain(l.power / maxPower, 0, 1));
+                //   for (let w = 0; w < nWaves; w++) {
+                //     noFill();
+                //     stroke(c);
+                //     strokeWeight(1.5);
+                //     beginShape();
+                //     let phase = frameCount * 0.08 * (l.power >= 0 ? 1 : -1) + w * PI / nWaves;
+                //     let waveAmp = 2 + 2 * (l.power / maxPower); // amplitude
+                //     let waveLen = 10 + 10 * (l.power / maxPower); // wavelength (smaller = higher frequency)
+                //     let segStep = 1; // px step along the path
+                //     let accLen = 5;
+                //     for (let i = 0; i < path.length - 1; i++) {
+                //       let p0 = path[i];
+                //       let p1 = path[i+1];
+                //       let segLen = dist(p0.x, p0.y, p1.x, p1.y);
+                //       for (let s = 0; s < segLen; s += segStep) {
+                //         let t = s / segLen;
+                //         let x = lerp(p0.x, p1.x, t);
+                //         let y = lerp(p0.y, p1.y, t);
+                //         // Direction of segment
+                //         let dx = p1.x - p0.x;
+                //         let dy = p1.y - p0.y;
+                //         let segAngle = atan2(dy, dx);
+                //         // Perpendicular
+                //         let perpAngle = segAngle + HALF_PI;
+                //         // Wave offset
+                //         let offset = sin((accLen + s) / waveLen * TWO_PI + phase) * waveAmp;
+                //         let wx = x + cos(perpAngle) * offset;
+                //         let wy = y + sin(perpAngle) * offset;
+                //         vertex(wx, wy);
+                //       }
+                //       accLen += segLen;
+                //     }
+                //     endShape();
+                //   }
+                // });
 
-                layer.particles.push({
-                  x: path[0].x,
-                  y: path[0].y,
-                  speed: random(0.1, 0.4),
-                  path: path,
-                  currentSegment: 0
+        // 🎇 **2: Particle system along lines 
+
+
+
+        // 🎇 **1: Particle system along lines**
+        
+        // Generate particles based on line power
+        noStroke();
+
+        if (FIRSTRUN){
+          // spread particles along the line at first run
+          if (frameCount % 20 === 0) {
+              layer.lines.forEach(l => {
+                const path = [l.from, ...(l.waypoints || []), l.to];
+                let px;
+                let py;
+                for (let t = 0; t < 1; t += 0.1) {
+                  px = lerp(path[0].x, path[1].x, t);
+                  py = lerp(path[0].y, path[1].y, t);
+                  layer.particles.push({
+                    // x: path[0].x,
+                    // y: path[0].y,
+                    x: px,
+                    y: py,
+                    // speed: random(0.1, 0.4),
+                    speed: 1,
+                    path: path,
+                    currentSegment: 0,
+                    alpha: map(l.power, 0, maxPerRow[5], 50, 255),
+                  });
+                }
+              
+            });
+            FIRSTRUN = false;
+           }            
+
+
+        // spawn normally at line start
+        } else {
+            if (frameCount % 20 === 0) {
+                layer.lines.forEach(l => {
+                  for (let i = 0; i < l.power / 20; i++) {
+                    const path = [l.from, ...(l.waypoints || []), l.to];
+                    layer.particles.push({
+                      x: path[0].x,
+                      y: path[0].y,
+                      // speed: random(0.1, 0.4),
+                      speed: 1,
+                      path: path,
+                      currentSegment: 0,
+                      alpha: map(l.power, 0, maxPerRow[5], 50, 255),   //  <-- FIND EXACT MAX POWER VALUE FROM RIGHT ROW
+                    });
+                    }
                 });
                 
-              }
-            });
+            }
           }
-        
-      
+          // Update and draw particles
         for (let i = layer.particles.length - 1; i >= 0; i--) {
               let p = layer.particles[i];
 
               // Get current segment
-              let start = p.path[p.currentSegment];
               let end   = p.path[p.currentSegment + 1];
               
               if (!end) {
@@ -370,6 +457,8 @@ function draw() {
               let angle = atan2(end.y - p.y, end.x - p.x);
               p.x += cos(angle) * p.speed;
               p.y += sin(angle) * p.speed;
+
+
               
               // If close to end of segment, move to next segment
               if (dist(p.x, p.y, end.x, end.y) < 1) {
@@ -379,8 +468,22 @@ function draw() {
               // drawingContext.shadowBlur = 15;
               // drawingContext.shadowColor = color(0, 255, 0, 255);
     
-              fill(255, 255, 0, 180);
-              ellipse(p.x, p.y, 4, 4);
+              // draw particle
+              // fill(255, 255, 0, 180);
+              // circle(p.x, p.y, 5);
+
+
+              // draw Lines
+              let pxend = p.x + cos(angle) * 3; 
+              let pyend = p.y + sin(angle) * 3;
+              stroke(255, 255, 0, p.alpha);
+              strokeWeight(2);
+
+              line(p.x, p.y, pxend, pyend);
+
+              
+
+              
           }
           
         // Draw substations
@@ -388,7 +491,6 @@ function draw() {
         layer.substations.forEach(sub => {
           let subColor = color(150);
           let size = 4;
-      
           if (sub.type === "380/220kV") {
             subColor = color(color380220kV);
             size = 12;
@@ -411,13 +513,16 @@ function draw() {
           fill(subColor);
           ellipse(sub.x, sub.y, size, size);
 
-          // // Reset shadow for next elements
-          // drawingContext.shadowBlur = 0;
+          // Show name only if mouse is hovering over substation
+          let d = dist(mouseX, mouseY, sub.x, sub.y);
+          if (d < 10) { // Show name if mouse is within 10 pixels
+            textAlign(CENTER, CENTER);
+            textSize(12);
+            fill(255);
+            text(sub.name, sub.x, sub.y - size-5);
+          }
 
-          textAlign(CENTER, TOP);
-          textSize(8);
-          fill(255);
-          text(sub.name, sub.x, sub.y + size / 2 );
+          
         });
 
   
@@ -765,6 +870,7 @@ function mousePressed() {
         voltageLayers[voltage].particles = [];
       }
       setup();
+      FIRSTRUN = true;
     }
     timelineActive = true;
     return;
@@ -777,7 +883,7 @@ function mousePressed() {
   // Check line clicks  
   let minDist = 10; // px threshold for click
   let found = false;
-  console.log("Mouse pressed at:", mouseX, mouseY);
+  // console.log("Mouse pressed at:", mouseX, mouseY);
   for (let voltage in voltageLayers) {
     const layer = voltageLayers[voltage];
     layer.lines.forEach(l => {
