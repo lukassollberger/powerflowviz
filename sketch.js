@@ -3,6 +3,7 @@
 let arrows = [];
 let particles = [];
 let colName = "LTH 1BACBRI"; // Will be set by mouse click
+let chosen_line_limit = 0; // Will be set by mouse click
 let animatedBarLens = [];
 let targetBarLens = [];
 let lastColName = colName;
@@ -20,7 +21,7 @@ let canvasWidth = mapWidth+1120;  // 1920 Total
 let canvasHeight = mapHeight+250; // 1050 Total
 let BKWmapImgscale = 1
 let average_power = null;
-let FIRSTRUN = true;
+// let FIRSTRUN = true;
 // Global arrays for min, max, average per row (for later plotting)
 let minPerRow = [];
 let maxPerRow = [];
@@ -28,6 +29,8 @@ let averagePerRow = [];
 let globalminVal = Infinity;
 let globalmaxVal = -Infinity;
 let nTimestamps;  // Declare nTimestamps globally
+let pTableMin = Infinity;
+let pTableMax = -Infinity;
 
 // BKW Corporate Colors (RGB)
 let BKW_Light_Yellow = [255, 204, 0];      // HEX #ffcc00
@@ -60,10 +63,10 @@ let BKWmapImg;
 
 
 let voltageLayers = {
-    "380/220kV": { visible: true, lines: [], substations: [], particles: [] },
-    "132kV":     { visible: true, lines: [], substations: [], particles: [] },
-    "50kV":      { visible: true, lines: [], substations: [], particles: [] },
-    "connector": { visible: true, lines: [], substations: [], particles: [] }
+    "380/220kV": { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: true},
+    "132kV":     { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: true},
+    "50kV":      { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: true},
+    "connector": { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: true }
   };
   
 let maxPower = 0; 
@@ -79,8 +82,6 @@ function preload() {
   // p5.js: Load timeseries in preload, rest in setup. Otherwise timeseries data is not fully loaded when needed, due to the way p5.js handles the default preload function.
   P_table = loadTable("Power_Vis_Data_Random.csv", "csv", "header");  
 
-  
-  // klintFont = loadFont("fonts/KlintforBKW-Regular.ttf");
   load_substations();     // load substation data in preload
 
 }
@@ -95,7 +96,7 @@ function load_substations() {
             maxY = d3.max(csv, d => d.Y);
             maxPower = d3.max(csv, d => d.P_MW || 0); 
 
-            console.log("🔹 Original coordinate range: X(", minX, "to", maxX, "), Y(", minY, "to", maxY, ")");
+            // console.log("🔹 Original coordinate range: X(", minX, "to", maxX, "), Y(", minY, "to", maxY, ")");
 
             // Normalize and scale substations
             csv.forEach(d => {
@@ -127,6 +128,7 @@ function load_lines(timestamp) {
           let toStation = substations.find(s => s.name === toName);
           const lineName = row.Line_Name;
           const lineAbbrev = row.Line_Abbreviation;
+          let linelimit = row.GW
           let power = getPowerFromTimeseries(timestamp, lineAbbrev);
           if (!isNaN(power)) {
             sum += power;
@@ -160,18 +162,19 @@ function load_lines(timestamp) {
                 power,
                 lineName,
                 lineAbbrev,
-                waypoints
+                waypoints,
+                linelimit
               });
             }
           }
         });
 
         average_power = sum / count;
-        console.log(`Average power for timestamp ${timestamp}:`, average_power);
-        console.log(`COUNT ${timestamp}:`, count);
-        console.log(`SUM ${timestamp}:`, sum);
+        // console.log(`Average power for timestamp ${timestamp}:`, average_power);
+        // console.log(`COUNT ${timestamp}:`, count);
+        // console.log(`SUM ${timestamp}:`, sum);
 
-        console.log("✅ Lines parsed and assigned to layers.");
+        // console.log("✅ Lines parsed and assigned to layers.");
       })
       .catch(function (error) {
         console.error("❌ Error loading lines CSV:", error);
@@ -184,7 +187,7 @@ function getPowerFromTimeseries(timestamp, lineAbbrev) {
   // Find the column index for the line abbreviation
   let colIndex = P_table.columns.indexOf(lineAbbrev);
   if (colIndex === -1) {
-    console.warn('Line abbreviation not found:', lineAbbrev);
+    // console.warn('Line abbreviation not found:', lineAbbrev);
     return null;
   }
   // Find the row index for the timestamp
@@ -194,7 +197,7 @@ function getPowerFromTimeseries(timestamp, lineAbbrev) {
       return P_table.getNum(r, colIndex);
     }
   }
-  console.warn('Timestamp not found:', timestamp);
+  // console.warn('Timestamp not found:', timestamp);
   return null;
 }
 
@@ -211,14 +214,6 @@ function setup() {
     // Set up canvas
     noStroke();
     createCanvas(canvasWidth, canvasHeight);
-
-    // Create timestamp input box (only once)
-    // if (!timestampInput) {
-    //   timestampInput = createInput(timestamp);
-    //   timestampInput.position(20, 20);
-    //   timestampInput.size(180);
-    //   timestampInput.input(onTimestampChange);
-    // }
 
     // Simple: min, max, average per row
     minPerRow = [];
@@ -246,6 +241,18 @@ function setup() {
 
     nTimestamps = P_table.getRowCount();
 
+    // compute global min/max from P_table
+    for (let r = 0; r < P_table.getRowCount(); r++) {
+      for (let c = 1; c < P_table.getColumnCount(); c++) {
+        let v = P_table.getNum(r, c);
+        if (!isNaN(v)) {
+          if (v < pTableMin) pTableMin = v;
+          if (v > pTableMax) pTableMax = v;
+        }
+      }
+    }
+    console.log('P_table global min/max:', pTableMin, pTableMax);
+
     // console.log('minPerRow:', minPerRow);
     // console.log('maxPerRow:', maxPerRow);
     // console.log('averagePerRow:', averagePerRow);
@@ -269,7 +276,6 @@ function draw() {
  
     for (let voltage in voltageLayers) {
         const layer = voltageLayers[voltage];
-      
         if (!layer.visible) continue;
       
         // Draw lines
@@ -294,133 +300,39 @@ function draw() {
               endShape();
          });
       
-      
-
-      // //  Generate arrows as a stream: higher power = smaller gaps
-      // noStroke();
-      // layer.lines.forEach(l => {
-      //   let minInterval = 5;   // minimum frames between arrows (high power)
-      //   let maxInterval = 60;  // maximum frames between arrows (low power)
-      //   let interval = maxInterval - (maxInterval - minInterval) * (l.power / maxPower);
-      //   interval = constrain(interval, minInterval, maxInterval);
-      //   if (frameCount % Math.round(interval) === 0) {
-      //     arrows.push({
-      //       x: l.from.x,
-      //       y: l.from.y,
-      //       speed: .2 + (l.power / maxPower) * 1.5, // speed based on power
-      //       angle: atan2(l.to.y - l.from.y, l.to.x - l.from.x),
-      //       targetX: l.to.x,
-      //       targetY: l.to.y
-      //     });
-      //   }
-      // });
-        
-      //   // Update and draw arrows
-      //     for (let i = arrows.length - 1; i >= 0; i--) {
-      //         let a = arrows[i];
-      //         a.x += cos(a.angle) * a.speed;
-      //         a.y += sin(a.angle) * a.speed;
-              
-      //         push();
-      //         translate(a.x, a.y);
-      //         rotate(a.angle);
-      //         fill(0, 255, 0, 10);
-      //         triangle(-2.5, -2.5, -2.5, 2.5, 2.5, 0); // Arrow shape
-      //         pop();
-              
-      //         // Remove arrows that reach their target
-      //         if (dist(a.x, a.y, a.targetX, a.targetY) < 5) {
-      //             arrows.splice(i, 1);
-      //         }
-      //     }
-
-        // // Particle generation
-                // // --- Wavy electricity lines visualization ---
-                // // For each line, draw several animated wavy lines to indicate power and direction
-                // layer.lines.forEach(l => {
-                //   let path = [l.from, ...(l.waypoints || []), l.to];
-                //   let totalLength = 0;
-                //   // Calculate total length of the path
-                //   for (let i = 0; i < path.length - 1; i++) {
-                //     totalLength += dist(path[i].x, path[i].y, path[i+1].x, path[i+1].y);
-                //   }
-                //   // Number of wavy lines proportional to power (min 1)
-                //   let nWaves = max(1, floor(l.power / 40));
-                //   // Color: yellow (low) to white (high)
-                //   let c = lerpColor(color(255, 255, 0), color(255, 255, 255), constrain(l.power / maxPower, 0, 1));
-                //   for (let w = 0; w < nWaves; w++) {
-                //     noFill();
-                //     stroke(c);
-                //     strokeWeight(1.5);
-                //     beginShape();
-                //     let phase = frameCount * 0.08 * (l.power >= 0 ? 1 : -1) + w * PI / nWaves;
-                //     let waveAmp = 2 + 2 * (l.power / maxPower); // amplitude
-                //     let waveLen = 10 + 10 * (l.power / maxPower); // wavelength (smaller = higher frequency)
-                //     let segStep = 1; // px step along the path
-                //     let accLen = 5;
-                //     for (let i = 0; i < path.length - 1; i++) {
-                //       let p0 = path[i];
-                //       let p1 = path[i+1];
-                //       let segLen = dist(p0.x, p0.y, p1.x, p1.y);
-                //       for (let s = 0; s < segLen; s += segStep) {
-                //         let t = s / segLen;
-                //         let x = lerp(p0.x, p1.x, t);
-                //         let y = lerp(p0.y, p1.y, t);
-                //         // Direction of segment
-                //         let dx = p1.x - p0.x;
-                //         let dy = p1.y - p0.y;
-                //         let segAngle = atan2(dy, dx);
-                //         // Perpendicular
-                //         let perpAngle = segAngle + HALF_PI;
-                //         // Wave offset
-                //         let offset = sin((accLen + s) / waveLen * TWO_PI + phase) * waveAmp;
-                //         let wx = x + cos(perpAngle) * offset;
-                //         let wy = y + sin(perpAngle) * offset;
-                //         vertex(wx, wy);
-                //       }
-                //       accLen += segLen;
-                //     }
-                //     endShape();
-                //   }
-                // });
-
-        // 🎇 **2: Particle system along lines 
-
-
-
         // 🎇 **1: Particle system along lines**
-        
         // Generate particles based on line power
-        noStroke();
-
-        if (FIRSTRUN){
-          // spread particles along the line at first run
-          if (frameCount % 20 === 0) {
-              layer.lines.forEach(l => {
-                const path = [l.from, ...(l.waypoints || []), l.to];
-                let px;
-                let py;
-                for (let t = 0; t < 1; t += 0.1) {
-                  px = lerp(path[0].x, path[1].x, t);
-                  py = lerp(path[0].y, path[1].y, t);
+        // Only initialize this layer on first run if we actually have lines loaded
+        if (voltageLayers[voltage].FIRSTRUN) {
+          if (!layer.lines || layer.lines.length === 0) {
+            // Lines not yet loaded for this layer; skip initialization this frame
+            // Keep FIRSTRUN true so we try again next frame
+        
+          } else {
+            voltageLayers[voltage].particles = [];
+            // Spread particles along the line at first run
+            layer.lines.forEach(l => {
+              const path = [l.from, ...(l.waypoints || []), l.to];
+              let pathLength = path.length;
+              for (let seg = 0; seg < pathLength - 1; seg++) {
+                for (let t = 0; t < 1; t += 0.2) {
+                  let px = lerp(path[seg].x, path[seg + 1].x, t);
+                  let py = lerp(path[seg].y, path[seg + 1].y, t);
                   layer.particles.push({
-                    // x: path[0].x,
-                    // y: path[0].y,
                     x: px,
                     y: py,
-                    // speed: random(0.1, 0.4),
                     speed: 1,
                     path: path,
-                    currentSegment: 0,
+                    currentSegment: seg,
                     alpha: map(l.power, 0, maxPerRow[5], 50, 255),
                   });
                 }
-              
+              }
             });
-            FIRSTRUN = false;
-           }            
-
-
+            // Only clear FIRSTRUN for this layer after particles were created
+            voltageLayers[voltage].FIRSTRUN = false;
+          }
+        
         // spawn normally at line start
         } else {
             if (frameCount % 20 === 0) {
@@ -441,6 +353,7 @@ function draw() {
                 
             }
           }
+
           // Update and draw particles
         for (let i = layer.particles.length - 1; i >= 0; i--) {
               let p = layer.particles[i];
@@ -458,8 +371,6 @@ function draw() {
               p.x += cos(angle) * p.speed;
               p.y += sin(angle) * p.speed;
 
-
-              
               // If close to end of segment, move to next segment
               if (dist(p.x, p.y, end.x, end.y) < 1) {
                 p.currentSegment++;
@@ -479,11 +390,7 @@ function draw() {
               stroke(255, 255, 0, p.alpha);
               strokeWeight(2);
 
-              line(p.x, p.y, pxend, pyend);
-
-              
-
-              
+              line(p.x, p.y, pxend, pyend); 
           }
           
         // Draw substations
@@ -528,7 +435,7 @@ function draw() {
   
 
       }
-      
+  
 
     // // 🎇 **Update and draw particles with smooth movement**
     // strokeWeight(0);
@@ -695,8 +602,12 @@ function draw() {
     // --- Circular bar plot with animation ---
     let cx = canvasWidth * 0.7;
     let cy = canvasHeight * 0.5;
-    let radius = 280;
-    let barMaxLen = 120;
+    let radius = 300;
+    let minpower = -200;  // define min and max power for mapping
+    let maxpower = 200;
+    let PixelperMW = 1/2;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.
+
+    let MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
     let barWidth = 2;
     let nBars = n; // one bar per time step
     let angleStep = TWO_PI / nBars;
@@ -706,7 +617,7 @@ function draw() {
       targetBarLens = [];
       for (let i = 0; i < nBars; i++) {
         let val = P_table.getNum(i, colName);
-        let barLen = map(val, lineminVal, linemaxVal, 10, barMaxLen);
+        let barLen = map(val, minpower, maxpower, minpower*PixelperMW, maxpower*PixelperMW);
         targetBarLens.push(barLen);
       }
       // If first time, set animatedBarLens instantly
@@ -736,6 +647,20 @@ function draw() {
     strokeWeight(2);
     ellipse(cx, cy, radius * 2, radius * 2);
 
+    for (let r = -10; r <= 10; r++) {
+      let rr = radius + (MWSteps * r);
+      stroke(100);
+      strokeWeight(1);
+      ellipse(cx, cy, rr * 2, rr * 2);
+    }
+
+    // Draw line limit circle
+    limit_radius = map(chosen_line_limit, 0, maxpower, radius, radius+maxpower*PixelperMW);
+    stroke("red");
+    strokeWeight(2);
+    ellipse(cx, cy, limit_radius * 2, limit_radius * 2);
+
+    ;
     // --- Add weekday names and ticks inside the circle ---
     let weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     let daysInWeek = 7;
@@ -868,9 +793,9 @@ function mousePressed() {
       for (let voltage in voltageLayers) {
         voltageLayers[voltage].lines = [];
         voltageLayers[voltage].particles = [];
+        voltageLayers[voltage].FIRSTRUN = true;
       }
       setup();
-      FIRSTRUN = true;
     }
     timelineActive = true;
     return;
@@ -904,6 +829,7 @@ function mousePressed() {
         let d = dist(mouseX, mouseY, px, py);
         if (d < minDist) {
           colName = l.lineAbbrev;
+          chosen_line_limit = l.linelimit;
           found = true;
         }
       }
