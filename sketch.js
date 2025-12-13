@@ -3,7 +3,20 @@
 let arrows = [];
 let particles = [];
 let colName = "LTH 1BACBRI"; // Will be set by mouse click
+let lineSelect = null; // Will be set by mouse click
 let chosen_line_limit = 0; // Will be set by mouse click
+// Provide a safe default for `lineSelect` so code can reference its properties
+lineSelect = {
+  type: "132kV",
+  from: { type: "132kV", name: "", x: 0, y: 0, power: 0 },
+  to: { type: "132kV", name: "", x: 10, y: 0, power: 0 },
+  power: 0,
+  lineName: "Default Line",
+  lineAbbrev: "LTH 1BACBRI",
+  waypoints: [],
+  linelimit: 200
+};
+//
 let animatedBarLens = [];
 let targetBarLens = [];
 let lastColName = colName;
@@ -12,14 +25,7 @@ let lines = [];
 let P_table = [];
 console.log("D3.js Version:", d3.version); 
 let minX, maxX, minY, maxY;
-let aspect_ratio = 1  
-let mapWidth = 800;
-let mapHeight = 800;
-let gridWidth = 800;
-let gridHeight = 900;
-let canvasWidth = mapWidth+1120;  // 1920 Total
-let canvasHeight = mapHeight+250; // 1050 Total
-let BKWmapImgscale = 1
+
 let average_power = null;
 // let FIRSTRUN = true;
 // Global arrays for min, max, average per row (for later plotting)
@@ -55,6 +61,7 @@ let color380220kV = BKW_Green;
 let color132kV = BKW_Orange;
 let color50kV = BKW_Blue;
 
+let magnifier = false;
 // Background colors
 let colorBackground = BKW_Dark_Blue;
 
@@ -63,29 +70,57 @@ let BKWmapImg;
 
 
 let voltageLayers = {
-    "380/220kV": { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: true},
-    "132kV":     { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: true},
-    "50kV":      { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: true},
-    "connector": { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: true }
+    "380/220kV": { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: false},
+    "132kV":     { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: false},
+    "50kV":      { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: false},
+    "connector": { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: false}
   };
   
 let maxPower = 0; 
 
-let timestamp = "01-01-2024 00:45"; 
+
+// Map
+let mapX = 50;
+let mapY = 100;
+let aspect_ratio = 1  
+let mapWidth = 800;
+let mapHeight = 800;
+let gridWidth = 800;
+let gridHeight = 900;
+let canvasWidth = mapWidth+1120;  // 1920 Total
+let canvasHeight = mapHeight+250; // 1050 Total
+let BKWmapImgscale = 1
+
+// time rectangle
+let timestamp = "2024-12-01 00:15"; 
 let timestampInput;
-let timelineRect = { x: 140, y:  canvasHeight - 100, w: canvasWidth - 260, h: 80 };
+let timelineRect = { x: canvasWidth/2-100, y: 50, w: canvasWidth/2 - 100, h: 40 };
 let timelineActive = false;
-   
+  
+// circular plot center
+let cx = canvasWidth * 0.7;
+let cy = canvasHeight * 0.55;
+let minpower = -200;  // define min and max power for mapping
+let maxpower = 200;
+let PixelperMW = 1/2; 
+let MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
 
 function preload() {
   BKWmapImg = loadImage("bkw_map.png");  // transparentes Bild laden
   // p5.js: Load timeseries in preload, rest in setup. Otherwise timeseries data is not fully loaded when needed, due to the way p5.js handles the default preload function.
-  P_table = loadTable("Power_Vis_Data_Random.csv", "csv", "header");  
+  //P_table = loadTable("Power_Vis_Data_Random.csv", "csv", "header");  
+  // loadTable is baded in Java and a little bit messy. Better use d3.dsv if time.
+  // load_power_data(() => load_substations(() => load_lines()));
 
+  load_power_data();  // load power timeseries data in preload
   load_substations();     // load substation data in preload
 
 }
-
+function load_power_data() {
+  // p5.js: Load timeseries in preload, rest in setup. Otherwise timeseries data is not fully loaded when needed, due to the way p5.js handles the default preload function.
+  P_table = loadTable("Power_Vis_Data_Random.csv", "csv", "header");  
+  // loadTable is baded in Java and a little bit messy. Better use d3.dsv if time.
+}
 function load_substations() {
     d3.dsv(";", "substations_list.csv", d3.autoType)
         .then(function (csv) {
@@ -100,8 +135,8 @@ function load_substations() {
 
             // Normalize and scale substations
             csv.forEach(d => {
-                let scaledX = map(d.X, minX, maxX, 50, gridWidth);
-                let scaledY = map(d.Y, minY, maxY, 50, gridHeight);
+                let scaledX = map(d.X, minX, maxX, mapX, mapX+gridWidth);
+                let scaledY = map(d.Y, minY, maxY, mapY, mapY+gridHeight);
                 const sub = { type: d.Type, name: d.Name, x: scaledX, y: scaledY, power: d.P_MW || 0 };
                 substations.push(sub);
                 if (voltageLayers[d.Type]) {
@@ -141,8 +176,8 @@ function load_lines(timestamp) {
             let raw = row.Waypoints.includes("|") ? row.Waypoints.split("|") : [row.Waypoints];
             waypoints = raw.map(pair => {
               let [origX, origY] = pair.split(",").map(Number);
-              let x = map(origX, minX, maxX, 50, gridWidth);
-              let y = map(origY, minY, maxY, 50, gridHeight);
+              let x = map(origX, minX, maxX, mapX, gridWidth);
+              let y = map(origY, minY, maxY, mapY, gridHeight);
               return { x, y };
             });
           }
@@ -213,6 +248,7 @@ function setup() {
 
     // Set up canvas
     noStroke();
+    // createCanvas(canvasWidth, canvasHeight, SVG); // for SVG export
     createCanvas(canvasWidth, canvasHeight);
 
     // Simple: min, max, average per row
@@ -266,7 +302,7 @@ function draw() {
     background(colorBackground);
     push();
     // tint(255, 255, 255, 255);  
-    image(BKWmapImg, 0, 50, mapWidth*BKWmapImgscale, mapHeight*BKWmapImgscale);  
+    image(BKWmapImg, mapX-50, mapY, mapWidth*BKWmapImgscale, mapHeight*BKWmapImgscale);  
     // noTint();  
     pop();
     if (substations.length === 0) {
@@ -422,11 +458,11 @@ function draw() {
 
           // Show name only if mouse is hovering over substation
           let d = dist(mouseX, mouseY, sub.x, sub.y);
-          if (d < 10) { // Show name if mouse is within 10 pixels
+          if (d < 5) { // Show name if mouse is within 10 pixels
             textAlign(CENTER, CENTER);
-            textSize(12);
+            textSize(20);
             fill(255);
-            text(sub.name, sub.x, sub.y - size-5);
+            text(sub.name, sub.x, sub.y);
           }
 
           
@@ -541,21 +577,21 @@ function draw() {
     }
     // Marker for current timestamp
     let markerX = map(tsIdx, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
-    stroke(0, 120, 255);
-    strokeWeight(3);
-    line(markerX, timelineRect.y, markerX, timelineRect.y + timelineRect.h);
+    stroke(BKW_Light_Green);
+    strokeWeight(5);
+    line(markerX, timelineRect.y-4, markerX, timelineRect.y + timelineRect.h+4);
     noStroke();
-    fill(0);
+    fill(BKW_Light_Green);
     textAlign(CENTER, TOP);
-    textSize(12);
-    text(timestamp, markerX, timelineRect.y + timelineRect.h + 2);
+    textSize(14);
+    text(timestamp, markerX, timelineRect.y + timelineRect.h + 8);
 
-    // Optionally, draw ticks every 24 steps (1 per day for 15-min data)
-    stroke(100, 100, 180, 120);
-    strokeWeight(1);
+    // draw ticks every 24 steps (1 per day for 15-min data)
+    stroke(BKW_Light_Green);
+    strokeWeight(2);
     for (let i = 0; i < nTimestamps; i += 96) {
       let tickX = map(i, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
-      line(tickX, timelineRect.y + timelineRect.h - 6, tickX, timelineRect.y + timelineRect.h);
+      line(tickX, timelineRect.y, tickX, timelineRect.y + timelineRect.h);
     }
     noStroke();
 
@@ -599,15 +635,37 @@ function draw() {
     // circle(canvasWidth*0.75, canvasHeight*0.6, 300);
     // circle(canvasWidth*0.75, csanvasHeight*0.6, 200);
 
-    // --- Circular bar plot with animation ---
-    let cx = canvasWidth * 0.7;
-    let cy = canvasHeight * 0.5;
-    let radius = 300;
-    let minpower = -200;  // define min and max power for mapping
-    let maxpower = 200;
-    let PixelperMW = 1/2;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.
+    // --- Circular bar plot ---
+    console.log("Drawing circular bar plot for", lineSelect);
 
-    let MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+    if (lineSelect.type === "380/220kV") {
+      minpower = -200;  // define min and max power for mapping
+      maxpower = 200;
+      PixelperMW = 1/2;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.
+      MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+
+    } else if (lineSelect.type === "132kV") {
+      minpower = -100;  // define min and max power for mapping
+      maxpower = 100;
+      PixelperMW = 2;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.    } else if (lineSelect.type === "50kV") {
+      MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+    } else if (lineSelect.type === "50kV") {
+      minpower = -20;  // define min and max power for mapping
+      maxpower = 20;
+      PixelperMW = 5;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.    }
+      MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+
+    } else {
+      minpower = -200;  // define min and max power for mapping
+      maxpower = 200;
+      PixelperMW = 1/2;
+      MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+
+    }
+    // let minpower = -200;  // define min and max power for mapping
+    // let maxpower = 200;
+    // let PixelperMW = 1/2;
+    let radius = 300;
     let barWidth = 2;
     let nBars = n; // one bar per time step
     let angleStep = TWO_PI / nBars;
@@ -655,10 +713,22 @@ function draw() {
     }
 
     // Draw line limit circle
-    limit_radius = map(chosen_line_limit, 0, maxpower, radius, radius+maxpower*PixelperMW);
+    
+    limit_radius = map(lineSelect.linelimit, 0, maxpower, radius, radius+maxpower*PixelperMW);
     stroke("red");
     strokeWeight(2);
-    ellipse(cx, cy, limit_radius * 2, limit_radius * 2);
+    ellipse(cx, cy, limit_radius*2, limit_radius*2);
+
+    // draw marker line
+    stroke(BKW_Light_Green);
+    strokeWeight(5);
+    push();
+    // translate to center first, then rotate so rotation is around (cx, cy)
+    translate(cx, cy);
+    let markerAngle = map(markerX, timelineRect.x, timelineRect.x + timelineRect.w, -HALF_PI, -HALF_PI + TWO_PI );
+    rotate(markerAngle);
+    line(0, 0, radius, 0);
+    pop();
 
     ;
     // --- Add weekday names and ticks inside the circle ---
@@ -730,6 +800,10 @@ function draw() {
     fill(255);
     textAlign(RIGHT, BOTTOM);
     text(`Average Power: ${average_power !== null ? average_power.toFixed(2) : "N/A"}`, canvasWidth - 20, canvasHeight - 10);
+
+  if (magnifier) {
+    drawMagnifier(mouseX, mouseY, 100, 2);
+  }
 }
 
 function keyPressed() {
@@ -777,7 +851,7 @@ function keyPressed() {
 
   
 // Detect line click and update colName for timeseries plot
-function mousePressed() {
+function mouseDragged() {
   // Timeline interaction
   if (
     mouseY > timelineRect.y && mouseY < timelineRect.y + timelineRect.h &&
@@ -828,9 +902,19 @@ function mousePressed() {
         let py = y0 + t * dy;
         let d = dist(mouseX, mouseY, px, py);
         if (d < minDist) {
-          colName = l.lineAbbrev;
-          chosen_line_limit = l.linelimit;
-          found = true;
+          // Ensure lineAbbrev is a non-empty string
+          if (typeof l.lineAbbrev !== 'string' || l.lineAbbrev.trim() === '') {
+            console.warn('Line abbreviation missing or invalid for line:', l);
+            colName = 'LTH 1BACBRI';
+            lineSelect = l; 
+            //chosen_line_limit = l.linelimit;
+            found = true;
+          } else {
+            colName = l.lineAbbrev;
+            lineSelect = l; 
+            //chosen_line_limit = l.linelimit;
+            found = true;
+          }
         }
       }
     });
@@ -842,4 +926,54 @@ function mousePressed() {
 
   
   
+}
+
+function keyTyped() {
+   if (key === 's') {
+    saveCanvas("PowerViz.png");
+    // save("PowerViz.svg");
+  }
+  if (key === 'm' && magnifier) {
+    magnifier = false
+    return  
+  }
+  if (key === 'm' && !magnifier) {
+    magnifier = true
+    return;
+  }
+}
+
+function drawMagnifier(cxMouse, cyMouse, radius = 80, zoom = 2) {
+  const ctx = drawingContext;              // underlying CanvasRenderingContext2D
+  const canvasEl = ctx.canvas;
+  const dpr = window.devicePixelRatio || 1;
+
+  // clamp requested values so source rectangle stays inside canvas
+  const sw = (radius * 2) / zoom;
+  const sh = sw;
+  let sx = (cxMouse - sw / 2);
+  let sy = (cyMouse - sh / 2);
+
+  // clamp source rectangle
+  sx = Math.max(0, Math.min(sx, canvasEl.width / dpr - sw));
+  sy = Math.max(0, Math.min(sy, canvasEl.height / dpr - sh));
+
+  // save, clip to circle, draw scaled portion into the circle, restore
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cxMouse, cyMouse, radius, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+
+  // drawImage(source, sx, sy, sw, sh, dx, dy, dw, dh)
+  ctx.drawImage(canvasEl, sx * dpr, sy * dpr, sw * dpr, sh * dpr,
+                cxMouse - radius, cyMouse - radius, radius * 2, radius * 2);
+
+  ctx.restore();
+
+  // border + crosshair (optional)
+  noFill();
+  stroke(255);
+  strokeWeight(4);
+  ellipse(cxMouse, cyMouse, radius * 2, radius * 2);
 }
