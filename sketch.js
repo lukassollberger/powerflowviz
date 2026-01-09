@@ -1,10 +1,31 @@
+console.log("D3.js Version:", d3.version); 
 
+// ---------------- Variables --------------------
+// Map
+let mapX = 50;
+let mapY = 100;
+let aspect_ratio = 1  
+let mapWidth = 800;
+let mapHeight = 800;
+let gridWidth = 800;
+let gridHeight = 900;
+let canvasWidth = mapWidth+1120;  // 1920 Total
+let canvasHeight = mapHeight+250; // 1050 Total
+let BKWmapImgscale = 1
 
+// grid visualization
 let arrows = [];
 let particles = [];
+
+// base parameters
+let lines = [];
+let P_table = [];
+let substations = [];
+
+// circular plot parameters
 let colName = "LTH 1BACBRI"; // Will be set by mouse click
 let lineSelect = null; // Will be set by mouse click
-let chosen_line_limit = 0; // Will be set by mouse click
+// let chosen_line_limit = 0; // Will be set by mouse click
 // Provide a safe default for `lineSelect` so code can reference its properties
 lineSelect = {
   type: "132kV",
@@ -16,18 +37,22 @@ lineSelect = {
   waypoints: [],
   linelimit: 200
 };
-//
 let animatedBarLens = [];
 let targetBarLens = [];
 let lastColName = colName;
-let substations = [];
-let lines = [];
-let P_table = [];
-console.log("D3.js Version:", d3.version); 
 let minX, maxX, minY, maxY;
-
 let average_power = null;
+
+// circular plot center
+let cx = canvasWidth * 0.7;
+let cy = canvasHeight * 0.55;
+let minpower = -200;  // define min and max power for mapping
+let maxpower = 200;
+let PixelperMW = 1/2; 
+let MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+
 // let FIRSTRUN = true;
+
 // Global arrays for min, max, average per row (for later plotting)
 let minPerRow = [];
 let maxPerRow = [];
@@ -62,13 +87,13 @@ let color132kV = BKW_Orange;
 let color50kV = BKW_Blue;
 
 let magnifier = false;
+
 // Background colors
 let colorBackground = BKW_Dark_Blue;
 
 let BKWmapImg;
 
-
-
+// voltage layers
 let voltageLayers = {
     "380/220kV": { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: false},
     "132kV":     { visible: true, lines: [], substations: [], particles: [], FIRSTRUN: false},
@@ -78,49 +103,19 @@ let voltageLayers = {
   
 let maxPower = 0; 
 
-
-// Map
-let mapX = 50;
-let mapY = 100;
-let aspect_ratio = 1  
-let mapWidth = 800;
-let mapHeight = 800;
-let gridWidth = 800;
-let gridHeight = 900;
-let canvasWidth = mapWidth+1120;  // 1920 Total
-let canvasHeight = mapHeight+250; // 1050 Total
-let BKWmapImgscale = 1
-
-// time rectangle
+// slider
 let timestamp = "2024-12-01 00:15"; 
 let timestampInput;
 let timelineRect = { x: canvasWidth/2-100, y: 50, w: canvasWidth/2 - 100, h: 40 };
 let timelineActive = false;
   
-// circular plot center
-let cx = canvasWidth * 0.7;
-let cy = canvasHeight * 0.55;
-let minpower = -200;  // define min and max power for mapping
-let maxpower = 200;
-let PixelperMW = 1/2; 
-let MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
-
-function preload() {
-  BKWmapImg = loadImage("bkw_map.png");  // transparentes Bild laden
-  // p5.js: Load timeseries in preload, rest in setup. Otherwise timeseries data is not fully loaded when needed, due to the way p5.js handles the default preload function.
-  //P_table = loadTable("Power_Vis_Data_Random.csv", "csv", "header");  
-  // loadTable is baded in Java and a little bit messy. Better use d3.dsv if time.
-  // load_power_data(() => load_substations(() => load_lines()));
-
-  load_power_data();  // load power timeseries data in preload
-  load_substations();     // load substation data in preload
-
-}
+// ---------------- Helper Functions --------------------
+// Load power timeseries data
 function load_power_data() {
-  // p5.js: Load timeseries in preload, rest in setup. Otherwise timeseries data is not fully loaded when needed, due to the way p5.js handles the default preload function.
-  P_table = loadTable("Power_Vis_Data_Random.csv", "csv", "header");  
-  // loadTable is baded in Java and a little bit messy. Better use d3.dsv if time.
+  P_table = loadTable("Power_Vis_Data_Random.csv", "csv", "header");     // loadTable is based in Java and a little bit messy. Better use d3.dsv if time.
 }
+
+// Load substations data
 function load_substations() {
     d3.dsv(";", "substations_list.csv", d3.autoType)
         .then(function (csv) {
@@ -130,8 +125,6 @@ function load_substations() {
             minY = d3.min(csv, d => d.Y);
             maxY = d3.max(csv, d => d.Y);
             maxPower = d3.max(csv, d => d.P_MW || 0); 
-
-            // console.log("🔹 Original coordinate range: X(", minX, "to", maxX, "), Y(", minY, "to", maxY, ")");
 
             // Normalize and scale substations
             csv.forEach(d => {
@@ -150,6 +143,7 @@ function load_substations() {
         });
 }
 
+// Load lines data
 function load_lines(timestamp) {
     d3.dsv(";", "line_list_out.csv").then(
       function (linedata) {
@@ -169,7 +163,6 @@ function load_lines(timestamp) {
             sum += power;
             count++;
           }
-          // console.log(`(${lineAbbrev}), Power: ${power}`);         
 
           let waypoints = [];
           if (row.Waypoints) {
@@ -236,110 +229,11 @@ function getPowerFromTimeseries(timestamp, lineAbbrev) {
   return null;
 }
 
+// Generate Particles  along lines
+function generate_particles(voltage, layer) {
 
-// setup function 
-function setup() {
-    // P_table = d3.dsv(",", "Power_Vis_Data_P.csv")  // optinal if time: check if you can load csv with d3 here instead of p5 loadTable
-
-    // console.log(P_table.getColumnCount() + ' total columns in table');  // check if table is loaded correctly
-    
-    // Load substation and line data
-    load_lines(timestamp);  // load line data in setup after power timeseries is fully loaded in preload()
-
-    // Set up canvas
-    noStroke();
-    // createCanvas(canvasWidth, canvasHeight, SVG); // for SVG export
-    createCanvas(canvasWidth, canvasHeight);
-
-    // Simple: min, max, average per row
-    minPerRow = [];
-    maxPerRow = [];
-    averagePerRow = [];
-    for (let r = 0; r < P_table.getRowCount(); r++) {
-      let vals = [];
-      for (let c = 1; c < P_table.getColumnCount(); c++) {
-        let v = P_table.getNum(r, c);
-        if (!isNaN(v)) vals.push(v);
-      }
-      if (vals.length > 0) {
-        minPerRow[r] = Math.min(...vals);
-        maxPerRow[r] = Math.max(...vals);
-        averagePerRow[r] = vals.reduce((a, b) => a + b, 0) / vals.length;
-
-        if (minPerRow[r] < globalminVal) globalminVal = minPerRow[r];
-        if (maxPerRow[r] > globalmaxVal) globalmaxVal = maxPerRow[r];
-
-
-      } else {
-        minPerRow[r] = maxPerRow[r] = averagePerRow[r] = NaN;
-      }
-    }
-
-    nTimestamps = P_table.getRowCount();
-
-    // compute global min/max from P_table
-    for (let r = 0; r < P_table.getRowCount(); r++) {
-      for (let c = 1; c < P_table.getColumnCount(); c++) {
-        let v = P_table.getNum(r, c);
-        if (!isNaN(v)) {
-          if (v < pTableMin) pTableMin = v;
-          if (v > pTableMax) pTableMax = v;
-        }
-      }
-    }
-    console.log('P_table global min/max:', pTableMin, pTableMax);
-
-    // console.log('minPerRow:', minPerRow);
-    // console.log('maxPerRow:', maxPerRow);
-    // console.log('averagePerRow:', averagePerRow);
-
-}
-
-
-// draw function -- this function is called repeatedly to render the visualization
-function draw() {
-
-    background(colorBackground);
-    push();
-    // tint(255, 255, 255, 255);  
-    image(BKWmapImg, mapX-50, mapY, mapWidth*BKWmapImgscale, mapHeight*BKWmapImgscale);  
-    // noTint();  
-    pop();
-    if (substations.length === 0) {
-        text("Loading data...", width / 2, height / 2);
-        return;
-    }
- 
-    for (let voltage in voltageLayers) {
-        const layer = voltageLayers[voltage];
-        if (!layer.visible) continue;
-      
-        // Draw lines
-        strokeWeight(2);
-        layer.lines.forEach(l => {
-              // 🟢 Set stroke color based on voltage type
-              if (l.type === "380/220kV") {
-                stroke(color380220kV);       // Green
-              } else if (l.type === "132kV") {
-                stroke(color132kV);     // Orange
-              } else if (l.type === "50kV") {
-                stroke(color50kV);     // Blue
-              } else {
-                stroke(100);             // Fallback gray
-              }
-
-              noFill();
-              beginShape();
-              vertex(l.from.x, l.from.y);
-              l.waypoints?.forEach(wp => vertex(wp.x, wp.y));
-              vertex(l.to.x, l.to.y);
-              endShape();
-         });
-      
-        // 🎇 **1: Particle system along lines**
-        // Generate particles based on line power
-        // Only initialize this layer on first run if we actually have lines loaded
-        if (voltageLayers[voltage].FIRSTRUN) {
+  // Only initialize particles on first run if we actually have lines loaded
+  if (voltageLayers[voltage].FIRSTRUN) {
           if (!layer.lines || layer.lines.length === 0) {
             // Lines not yet loaded for this layer; skip initialization this frame
             // Keep FIRSTRUN true so we try again next frame
@@ -369,7 +263,7 @@ function draw() {
             voltageLayers[voltage].FIRSTRUN = false;
           }
         
-        // spawn normally at line start
+        // Generate particles based on line power. Spawn normally at line start. 
         } else {
             if (frameCount % 20 === 0) {
                 layer.lines.forEach(l => {
@@ -428,142 +322,11 @@ function draw() {
 
               line(p.x, p.y, pxend, pyend); 
           }
-          
-        // Draw substations
-        noStroke();
-        layer.substations.forEach(sub => {
-          let subColor = color(150);
-          let size = 4;
-          if (sub.type === "380/220kV") {
-            subColor = color(color380220kV);
-            size = 12;
-          } else if (sub.type === "132kV") {
-            subColor = color(color132kV);
-            size = 8;
-          } else if (sub.type === "50kV") {
-            subColor = color(color50kV);
-            size = 6;
-          }
-      
-          // fill(subColor);
-          // ellipse(sub.x, sub.y, size, size);
 
-          // // Glow effect based on power
-          // drawingContext.shadowBlur = 15;
-          // let alpha = map(sub.power, 0, maxPower, 0, 255); // map(value, inMin, inMax, outMin, outMax)
-          // drawingContext.shadowColor = color(255, 0, 0, alpha);
-
-          fill(subColor);
-          ellipse(sub.x, sub.y, size, size);
-
-          // Show name only if mouse is hovering over substation
-          let d = dist(mouseX, mouseY, sub.x, sub.y);
-          if (d < 5) { // Show name if mouse is within 10 pixels
-            textAlign(CENTER, CENTER);
-            textSize(20);
-            fill(255);
-            text(sub.name, sub.x, sub.y);
-          }
-
-          
-        });
-
-  
-
-      }
-  
-
-    // // 🎇 **Update and draw particles with smooth movement**
-    // strokeWeight(0);
-    // for (let i = particles.length - 1; i >= 0; i--) {
-    //     let p = particles[i];
-
-    //     // Move towards target
-    //     let angle = atan2(p.targetY - p.y, p.targetX - p.x);
-    //     p.x += cos(angle) * p.speed;
-    //     p.y += sin(angle) * p.speed;
-
-    //     fill(200, 200, 0, 180);
-    //     ellipse(p.x, p.y, 4, 4); 
-
-    //     // Remove particles when close to the target
-    //     if (dist(p.x, p.y, p.targetX, p.targetY) < 5) {
-    //         particles.splice(i, 1);
-    //     }
-    // }    
- 
-        
-    
-     // Draw substations
-    //  noStroke();
-    //  substations.forEach(sub => {
-    //      let subColor = color(150); // Default gray
-    //      let size = 4; // Default size
- 
-    //      if (sub.type === "380/220kV") {
-    //          subColor = color(0, 255, 0); // Green
-    //          size = 12;
-    //      } else if (sub.type === "132kV") {
-    //          subColor = color(255, 165, 0); // Orange
-    //          size = 8;
-    //      } else if (sub.type === "50kV") {
-    //          subColor = color(0, 100, 255); // Blue
-    //          size = 6;
-    //      }
- 
-    //      fill(subColor);
-    //      ellipse(sub.x, sub.y, size, size); // Use different sizes
-    //      fill(0); // Black text
-    //      textAlign(CENTER, TOP);
-    //      textSize(4);
-    //      text(sub.name, sub.x, sub.y + size / 2 + 2); // Below the circle
-    //  }); 
-   
-    drawLegend();
-    drawTitle();
-
-
-
-    // ---------------- Plot timerseries --------------------
-    let days = 7;
-    let timevalues = 96;
-    let n = days * timevalues;
-    let margin = 50;
-
-
-    // Find min/max for scaling
-    let lineminVal = Infinity, linemaxVal = -Infinity;
-    for (let r = 0; r < n; r++) {
-      let val = P_table.getNum(r, colName);
-      if (val < lineminVal) lineminVal = val;
-      if (val > linemaxVal) linemaxVal = val;
-    }
-
-    // // Draw line plot
-    // noFill();
-    // strokeWeight(4);
-    // beginShape();
-    // let row = 0;
-    // for (let d = 1; d < days+1; d++) {
-    //     for (let t = 0; t < timevalues; t++) {
-    //       let x1 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
-    //       let y1 = d*50
-    //       let x2 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
-    //       let y2 = d*50 + 50;
-    //       let val = P_table.getNum(row, colName);
-    //       row = row+1
-    //       // Map val to a color gradient (e.g., blue to red)
-    //       let tmp = map(val, lineminVal, linemaxVal, 0, 1);
-    //       let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
-    //       stroke(col);
-
-    //       line(x1, y1, x2, y2);
-    //     }
-    // }
-    // endShape()
-
-    // --- Timeline rectangle for timestamp selection ---
-    fill(255, 255, 255, 150);
+}
+// Timeline rectangle for timestamp selection 
+function timeline_slider() {
+   fill(255, 255, 255, 150);
     noStroke();
     rect(timelineRect.x, timelineRect.y, timelineRect.w, timelineRect.h,2);
 
@@ -595,8 +358,7 @@ function draw() {
     }
     noStroke();
 
-    // Draw line plot V2
-    // Draw min, average, and max lines at the bottom (timelineRect area)
+    // Draw min, average, and max lines into time slider
     noFill();
     strokeWeight(2);
     // Average line (orange)
@@ -626,145 +388,337 @@ function draw() {
       vertex(x, y);
     }
     endShape();
-    // -----------------------------------------------
+
+    return markerX;
+}
+
+function circularBarPlot(markerX) {
+  let days = 7;
+  let timevalues = 96;
+  let n = days * timevalues;
+  let margin = 50;
 
 
+  // Find min/max for scaling
+  let lineminVal = Infinity, linemaxVal = -Infinity;
+  for (let r = 0; r < n; r++) {
+    let val = P_table.getNum(r, colName);
+    if (val < lineminVal) lineminVal = val;
+    if (val > linemaxVal) linemaxVal = val;
+  }
+  console.log("Drawing circular bar plot for", lineSelect);
 
+  if (lineSelect.type === "380/220kV") {
+    minpower = -200;  // define min and max power for mapping
+    maxpower = 200;
+    PixelperMW = 1/2;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.
+    MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
 
-    // circle(canvasWidth*0.75, canvasHeight*0.6, 400);
-    // circle(canvasWidth*0.75, canvasHeight*0.6, 300);
-    // circle(canvasWidth*0.75, csanvasHeight*0.6, 200);
+  } else if (lineSelect.type === "132kV") {
+    minpower = -100;  // define min and max power for mapping
+    maxpower = 100;
+    PixelperMW = 2;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.    } else if (lineSelect.type === "50kV") {
+    MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+  } else if (lineSelect.type === "50kV") {
+    minpower = -20;  // define min and max power for mapping
+    maxpower = 20;
+    PixelperMW = 5;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.    }
+    MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
 
-    // --- Circular bar plot ---
-    console.log("Drawing circular bar plot for", lineSelect);
+  } else {
+    minpower = -200;  // define min and max power for mapping
+    maxpower = 200;
+    PixelperMW = 1/2;
+    MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
 
-    if (lineSelect.type === "380/220kV") {
-      minpower = -200;  // define min and max power for mapping
-      maxpower = 200;
-      PixelperMW = 1/2;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.
-      MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+  }
+  // let minpower = -200;  // define min and max power for mapping
+  // let maxpower = 200;
+  // let PixelperMW = 1/2;
+  let radius = 300;
+  let barWidth = 2;
+  let nBars = n; // one bar per time step
+  let angleStep = TWO_PI / nBars;
 
-    } else if (lineSelect.type === "132kV") {
-      minpower = -100;  // define min and max power for mapping
-      maxpower = 100;
-      PixelperMW = 2;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.    } else if (lineSelect.type === "50kV") {
-      MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
-    } else if (lineSelect.type === "50kV") {
-      minpower = -20;  // define min and max power for mapping
-      maxpower = 20;
-      PixelperMW = 5;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.    }
-      MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
-
-    } else {
-      minpower = -200;  // define min and max power for mapping
-      maxpower = 200;
-      PixelperMW = 1/2;
-      MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
-
-    }
-    // let minpower = -200;  // define min and max power for mapping
-    // let maxpower = 200;
-    // let PixelperMW = 1/2;
-    let radius = 300;
-    let barWidth = 2;
-    let nBars = n; // one bar per time step
-    let angleStep = TWO_PI / nBars;
-
-    // If colName changed, update targetBarLens
-    if (colName !== lastColName || targetBarLens.length !== nBars) {
-      targetBarLens = [];
-      for (let i = 0; i < nBars; i++) {
-        let val = P_table.getNum(i, colName);
-        let barLen = map(val, minpower, maxpower, minpower*PixelperMW, maxpower*PixelperMW);
-        targetBarLens.push(barLen);
-      }
-      // If first time, set animatedBarLens instantly
-      if (animatedBarLens.length !== nBars) {
-        animatedBarLens = targetBarLens.slice();
-      }
-      lastColName = colName;
-    }
-    // Animate bar lengths
+  // If colName changed, update targetBarLens
+  if (colName !== lastColName || targetBarLens.length !== nBars) {
+    targetBarLens = [];
     for (let i = 0; i < nBars; i++) {
-      animatedBarLens[i] = lerp(animatedBarLens[i], targetBarLens[i], 0.15); // smooth step
       let val = P_table.getNum(i, colName);
-      let tmp = map(val, lineminVal, linemaxVal, 0, 1);
-      let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
-      let angle = -HALF_PI + i * angleStep;
-      let x0 = cx + cos(angle) * radius;
-      let y0 = cy + sin(angle) * radius;
-      let x1 = cx + cos(angle) * (radius + animatedBarLens[i]);
-      let y1 = cy + sin(angle) * (radius + animatedBarLens[i]);
-      stroke(col);
-      strokeWeight(barWidth);
-      line(x0, y0, x1, y1);
+      let barLen = map(val, minpower, maxpower, minpower*PixelperMW, maxpower*PixelperMW);
+      targetBarLens.push(barLen);
     }
-    // Draw circle outline
-    noFill();
-    stroke(200);
-    strokeWeight(2);
-    ellipse(cx, cy, radius * 2, radius * 2);
-
-    for (let r = -10; r <= 10; r++) {
-      let rr = radius + (MWSteps * r);
-      stroke(100);
-      strokeWeight(1);
-      ellipse(cx, cy, rr * 2, rr * 2);
+    // If first time, set animatedBarLens instantly
+    if (animatedBarLens.length !== nBars) {
+      animatedBarLens = targetBarLens.slice();
     }
+    lastColName = colName;
+  }
+  // Animate bar lengths
+  for (let i = 0; i < nBars; i++) {
+    animatedBarLens[i] = lerp(animatedBarLens[i], targetBarLens[i], 0.15); // smooth step
+    let val = P_table.getNum(i, colName);
+    let tmp = map(val, lineminVal, linemaxVal, 0, 1);
+    let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
+    let angle = -HALF_PI + i * angleStep;
+    let x0 = cx + cos(angle) * radius;
+    let y0 = cy + sin(angle) * radius;
+    let x1 = cx + cos(angle) * (radius + animatedBarLens[i]);
+    let y1 = cy + sin(angle) * (radius + animatedBarLens[i]);
+    stroke(col);
+    strokeWeight(barWidth);
+    line(x0, y0, x1, y1);
+  }
+  // Draw circle outline
+  noFill();
+  stroke(200);
+  strokeWeight(2);
+  ellipse(cx, cy, radius * 2, radius * 2);
 
-    // Draw line limit circle
-    
-    limit_radius = map(lineSelect.linelimit, 0, maxpower, radius, radius+maxpower*PixelperMW);
-    stroke("red");
-    strokeWeight(2);
-    ellipse(cx, cy, limit_radius*2, limit_radius*2);
+  for (let r = -10; r <= 10; r++) {
+    let rr = radius + (MWSteps * r);
+    stroke(100);
+    strokeWeight(1);
+    ellipse(cx, cy, rr * 2, rr * 2);
+  }
 
-    // draw marker line
-    stroke(BKW_Light_Green);
-    strokeWeight(5);
-    push();
-    // translate to center first, then rotate so rotation is around (cx, cy)
-    translate(cx, cy);
-    let markerAngle = map(markerX, timelineRect.x, timelineRect.x + timelineRect.w, -HALF_PI, -HALF_PI + TWO_PI );
-    rotate(markerAngle);
-    line(0, 0, radius, 0);
-    pop();
+  // Draw line limit circle
+  
+  limit_radius = map(lineSelect.linelimit, 0, maxpower, radius, radius+maxpower*PixelperMW);
+  stroke("red");
+  strokeWeight(2);
+  ellipse(cx, cy, limit_radius*2, limit_radius*2);
 
-    ;
-    // --- Add weekday names and ticks inside the circle ---
-    let weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    let daysInWeek = 7;
-    let timevaluesPerDay = timevalues;
-    let labelRadius = radius - 60;
-    let tickRadiusInner = radius - 100;
-    let tickRadiusOuter = radius - 10;
-    textAlign(CENTER, CENTER);
-    textSize(18);
-    fill(255);
-    stroke(180);
-    strokeWeight(2);
-    for (let d = 0; d < daysInWeek; d++) {
-      let angle = -HALF_PI + d * (TWO_PI / daysInWeek);
-      // Weekday label
-      let lx = cx + cos(angle+PI/7) * labelRadius;
-      let ly = cy + sin(angle+PI/7) * labelRadius;
-      noStroke();
-      text(weekdayNames[d], lx, ly);
-      // Tick
-      stroke(180);
-      let tx0 = cx + cos(angle) * tickRadiusInner;
-      let ty0 = cy + sin(angle) * tickRadiusInner;
-      let tx1 = cx + cos(angle) * tickRadiusOuter;
-      let ty1 = cy + sin(angle) * tickRadiusOuter;
-      line(tx0, ty0, tx1, ty1);
-    }
+  // draw marker line
+  stroke(BKW_Light_Green);
+  strokeWeight(5);
+  push();
+  // translate to center first, then rotate so rotation is around (cx, cy)
+  translate(cx, cy);
+  let markerAngle = map(markerX, timelineRect.x, timelineRect.x + timelineRect.w, -HALF_PI, -HALF_PI + TWO_PI );
+  rotate(markerAngle);
+  line(0, 0, radius, 0);
+  pop();
+
+  ;
+  // --- Add weekday names and ticks inside the circle ---
+  let weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  let daysInWeek = 7;
+  let timevaluesPerDay = timevalues;
+  let labelRadius = radius - 60;
+  let tickRadiusInner = radius - 100;
+  let tickRadiusOuter = radius - 10;
+  textAlign(CENTER, CENTER);
+  textSize(18);
+  fill(255);
+  stroke(180);
+  strokeWeight(2);
+  for (let d = 0; d < daysInWeek; d++) {
+    let angle = -HALF_PI + d * (TWO_PI / daysInWeek);
+    // Weekday label
+    let lx = cx + cos(angle+PI/7) * labelRadius;
+    let ly = cy + sin(angle+PI/7) * labelRadius;
     noStroke();
-    // -----------------------------------------------
+    text(weekdayNames[d], lx, ly);
+    // Tick
+    stroke(180);
+    let tx0 = cx + cos(angle) * tickRadiusInner;
+    let ty0 = cy + sin(angle) * tickRadiusInner;
+    let tx1 = cx + cos(angle) * tickRadiusOuter;
+    let ty1 = cy + sin(angle) * tickRadiusOuter;
+    line(tx0, ty0, tx1, ty1);
+  }
+  noStroke();
+
+}
 
 
-   
+// ---------------- Preload function --------------------
+// p5.js: Load timeseries in preload, rest in setup. Otherwise timeseries data is not fully loaded when needed, due to the way p5.js handles the default preload function.
+function preload() {
+  BKWmapImg = loadImage("bkw_map.png");  
+  load_power_data();  // load power timeseries data in preload
+  load_substations();     // load substation data in preload
+}
+
+// ---------------- Setup function --------------------
+function setup() {
+    // P_table = d3.dsv(",", "Power_Vis_Data_P.csv")  // optional if time: check if you can load csv with d3 here instead of p5 loadTable
+    // console.log(P_table.getColumnCount() + ' total columns in table');  // check if table is loaded correctly
+
+    // Load substation and line data
+    load_lines(timestamp);  // load line data in setup after power timeseries is fully loaded in preload()
+
+    // Set up canvas
+    noStroke();
+
+    // createCanvas(canvasWidth, canvasHeight, SVG); // for SVG export
+    createCanvas(canvasWidth, canvasHeight);
+    
+    // Simple: min, max, average per row
+    minPerRow = [];
+    maxPerRow = [];
+    averagePerRow = [];
+    for (let r = 0; r < P_table.getRowCount(); r++) {
+      let vals = [];
+      for (let c = 1; c < P_table.getColumnCount(); c++) {
+        let v = P_table.getNum(r, c);
+        if (!isNaN(v)) vals.push(v);
+      }
+      if (vals.length > 0) {
+        minPerRow[r] = Math.min(...vals);
+        maxPerRow[r] = Math.max(...vals);
+        averagePerRow[r] = vals.reduce((a, b) => a + b, 0) / vals.length;
+
+        if (minPerRow[r] < globalminVal) globalminVal = minPerRow[r];
+        if (maxPerRow[r] > globalmaxVal) globalmaxVal = maxPerRow[r];
 
 
+      } else {
+        minPerRow[r] = maxPerRow[r] = averagePerRow[r] = NaN;
+      }
+    }
+    nTimestamps = P_table.getRowCount();
+
+    // compute global min/max from P_table
+    for (let r = 0; r < P_table.getRowCount(); r++) {
+      for (let c = 1; c < P_table.getColumnCount(); c++) {
+        let v = P_table.getNum(r, c);
+        if (!isNaN(v)) {
+          if (v < pTableMin) pTableMin = v;
+          if (v > pTableMax) pTableMax = v;
+        }
+      }
+    }
+    console.log('P_table global min/max:', pTableMin, pTableMax);
+
+    // console.log('minPerRow:', minPerRow);
+    // console.log('maxPerRow:', maxPerRow);
+    // console.log('averagePerRow:', averagePerRow);
+
+}
+
+
+// ---------------- Draw function --------------------
+function draw() {
+
+    background(colorBackground);
+    push();
+    // tint(255, 255, 255, 255);  
+    image(BKWmapImg, mapX-50, mapY, mapWidth*BKWmapImgscale, mapHeight*BKWmapImgscale);  
+    // noTint();  
+    pop();
+    if (substations.length === 0) {
+        text("Loading data...", width / 2, height / 2);
+        return;
+    }
+ 
+    for (let voltage in voltageLayers) {
+        const layer = voltageLayers[voltage];
+        if (!layer.visible) continue;
+      
+        // Draw lines
+        strokeWeight(2);
+        layer.lines.forEach(l => {
+              // 🟢 Set stroke color based on voltage type
+              if (l.type === "380/220kV") {
+                stroke(color380220kV);       // Green
+              } else if (l.type === "132kV") {
+                stroke(color132kV);     // Orange
+              } else if (l.type === "50kV") {
+                stroke(color50kV);     // Blue
+              } else {
+                stroke(100);             // Fallback gray
+              }
+
+              noFill();
+              beginShape();
+              vertex(l.from.x, l.from.y);
+              l.waypoints?.forEach(wp => vertex(wp.x, wp.y));
+              vertex(l.to.x, l.to.y);
+              endShape();
+         });
+      
+        // Particle system 
+        generate_particles(voltage, layer);
+
+          
+        // Draw substations
+        noStroke();
+        layer.substations.forEach(sub => {
+          let subColor = color(150);
+          let size = 4;
+          if (sub.type === "380/220kV") {
+            subColor = color(color380220kV);
+            size = 12;
+          } else if (sub.type === "132kV") {
+            subColor = color(color132kV);
+            size = 8;
+          } else if (sub.type === "50kV") {
+            subColor = color(color50kV);
+            size = 6;
+          }
+          // fill(subColor);
+          // ellipse(sub.x, sub.y, size, size);
+
+          // // Glow effect based on power
+          // drawingContext.shadowBlur = 15;
+          // let alpha = map(sub.power, 0, maxPower, 0, 255); // map(value, inMin, inMax, outMin, outMax)
+          // drawingContext.shadowColor = color(255, 0, 0, alpha);
+
+          fill(subColor);
+          ellipse(sub.x, sub.y, size, size);
+
+          // Show name only if mouse is hovering over substation
+          let d = dist(mouseX, mouseY, sub.x, sub.y);
+          if (d < 5) { // Show name if mouse is within 10 pixels
+            textAlign(CENTER, CENTER);
+            textSize(20);
+            fill(255);
+            text(sub.name, sub.x, sub.y);
+          }
+        });
+      }
+  
+
+    drawLegend();
+    drawTitle();
+
+
+
+    // ---------------- Plot timerseries --------------------
+    
+
+    // // Draw line plot
+    // noFill();
+    // strokeWeight(4);
+    // beginShape();
+    // let row = 0;
+    // for (let d = 1; d < days+1; d++) {
+    //     for (let t = 0; t < timevalues; t++) {
+    //       let x1 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
+    //       let y1 = d*50
+    //       let x2 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
+    //       let y2 = d*50 + 50;
+    //       let val = P_table.getNum(row, colName);
+    //       row = row+1
+    //       // Map val to a color gradient (e.g., blue to red)
+    //       let tmp = map(val, lineminVal, linemaxVal, 0, 1);
+    //       let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
+    //       stroke(col);
+
+    //       line(x1, y1, x2, y2);
+    //     }
+    // }
+    // endShape()
+
+    // Timeline rectangle for timestamp selection
+    let markerX = timeline_slider()
+
+    //  Circular bar plot
+    circularBarPlot(markerX);
+
+    
     // Draw Mouse Pos onto screen
     if (substations.length > 0) {
       // Convert canvas to original coordinates
