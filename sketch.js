@@ -13,6 +13,10 @@ let canvasWidth = mapWidth+1120;  // 1920 Total
 let canvasHeight = mapHeight+250; // 1050 Total
 let BKWmapImgscale = 1
 
+// Legend
+let legendX = canvasWidth/2 - 300;
+let legendY = 130;
+
 // grid visualization
 let arrows = [];
 let particles = [];
@@ -50,7 +54,7 @@ let minpower = -200;  // define min and max power for mapping
 let maxpower = 200;
 let PixelperMW = 1/2; 
 let MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
-
+let radius_circularPlot = 200;
 // let FIRSTRUN = true;
 
 // Global arrays for min, max, average per row (for later plotting)
@@ -89,7 +93,7 @@ let color50kV = BKW_Blue;
 let magnifier = false;
 
 // Background colors
-let colorBackground = BKW_Dark_Blue;
+let colorBackground = BKW_Black_10;
 
 let BKWmapImg;
 
@@ -106,7 +110,7 @@ let maxPower = 0;
 // slider
 let timestamp = "2024-12-01 00:15"; 
 let timestampInput;
-let timelineRect = { x: canvasWidth/2-100, y: 50, w: canvasWidth/2 - 100, h: 40 };
+let timelineRect = { x: 10, y: 30, w: canvasWidth/2 - 100, h: 40 };
 let timelineActive = false;
   
 // ---------------- Helper Functions --------------------
@@ -326,7 +330,7 @@ function generate_particles(voltage, layer) {
 }
 // Timeline rectangle for timestamp selection 
 function timeline_slider() {
-   fill(255, 255, 255, 150);
+    noFill();
     noStroke();
     rect(timelineRect.x, timelineRect.y, timelineRect.w, timelineRect.h,2);
 
@@ -362,7 +366,7 @@ function timeline_slider() {
     noFill();
     strokeWeight(2);
     // Average line (orange)
-    stroke(255, 140, 0);
+    stroke(BKW_Black);
     beginShape();
     for (let r = 0; r < nTimestamps; r++) {
       let x = map(r, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
@@ -371,7 +375,7 @@ function timeline_slider() {
     }
     endShape();
     // Min line (blue)
-    stroke(0, 100, 255);
+    stroke(BKW_Black);
     beginShape();
     for (let r = 0; r < nTimestamps; r++) {
       let x = map(r, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
@@ -380,7 +384,7 @@ function timeline_slider() {
     }
     endShape();
     // Max line (red)
-    stroke(255, 0, 0);
+    stroke(BKW_Black);
     beginShape();
     for (let r = 0; r < nTimestamps; r++) {
       let x = map(r, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
@@ -435,7 +439,7 @@ function circularBarPlot(markerX) {
   // let minpower = -200;  // define min and max power for mapping
   // let maxpower = 200;
   // let PixelperMW = 1/2;
-  let radius = 300;
+  let radius = radius_circularPlot;
   let barWidth = 2;
   let nBars = n; // one bar per time step
   let angleStep = TWO_PI / nBars;
@@ -780,26 +784,28 @@ function keyPressed() {
     ];
   
     textAlign(LEFT, CENTER);
-    textSize(10);
-    let x = 20;
-    let y = 40;
-    
-    text("Spannungsebene:",x,y-10);
+    textSize(18);
+    text("Spannungsebenen Ein- und Ausblender:",legendX,legendY-20);
     items.forEach((item, index) => {
       fill(item.visible ? item.color : 150);
-      rect(x, y + index * 25, 15, 15, 3);
+      rect(legendX, legendY + index * 25, 15, 15, 3);
   
       fill(0);
-      text(`[${item.key}] ${item.label}`, x + 25, y + index * 25 + 7);
+      text(`[${item.key}] ${item.label}`, legendX + 25, legendY + index * 25 + 7);
     });
+
+    text("Mit Taste M Lupe aktivieren/deaktivieren:",legendX,legendY + items.length * 25 + 20);
+
   }
 
   function drawTitle() {
-    textAlign(CENTER, TOP);
-    textSize(20);
+    textAlign(RIGHT, TOP);
+    textSize(50);
     // textFont(klintFont);
-    fill(255);
-    text("Verteilnetze BKW und Umgebung inkl. Übertragungsnetz", canvasWidth / 2, 10);
+    fill(0);
+    textStyle(BOLD);
+    text("Eine Woche im Hochspannungsnetz\nBern, Jura und Solothurn", canvasWidth-10, 10);
+    textStyle(NORMAL);
   }
 
 
