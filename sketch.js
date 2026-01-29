@@ -1,17 +1,29 @@
 console.log("D3.js Version:", d3.version); 
 
 // ---------------- Variables --------------------
+// initial canvas size
+
+const DESIGN_W = 1920;
+const DESIGN_H = 1080;
+
+let canvasWidth = DESIGN_W;
+let canvasHeight = DESIGN_H;
 // Map
 let mapX = 50;
 let mapY = 100;
-let aspect_ratio = 1  
-let mapWidth = 800;
-let mapHeight = 800;
-let gridWidth = 800;
-let gridHeight = 900;
-let canvasWidth = mapWidth+1120;  // 1920 Total
-let canvasHeight = mapHeight+250; // 1050 Total
-let BKWmapImgscale = 1
+// let aspect_ratio = 1  
+// let mapWidth = 700;
+// let mapHeight = 700;
+// let gridWidth = 700;
+// let gridHeight = 800;
+let mapWidth = canvasWidth*0.45;
+let mapHeight = mapWidth;
+let gridWidth = mapWidth;
+let gridHeight = gridWidth*1.1;
+// let canvasWidth = mapWidth+1120;  // 1920 Total
+// let canvasHeight = mapHeight+250; // 1050 Total
+// let BKWmapImgscale = 1
+let scaleFactor = 1;
 
 // Legend
 let legendX = canvasWidth/2 - 300;
@@ -39,7 +51,7 @@ lineSelect = {
   lineName: "Default Line",
   lineAbbrev: "LTH 1BACBRI",
   waypoints: [],
-  linelimit: 200
+  linelimit: 75
 };
 let animatedBarLens = [];
 let targetBarLens = [];
@@ -50,11 +62,7 @@ let average_power = null;
 // circular plot center
 let cx = canvasWidth * 0.7;
 let cy = canvasHeight * 0.55;
-let minpower = -200;  // define min and max power for mapping
-let maxpower = 200;
-let PixelperMW = 1/2; 
-let MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
-let radius_circularPlot = 200;
+
 // let FIRSTRUN = true;
 
 // Global arrays for min, max, average per row (for later plotting)
@@ -238,94 +246,99 @@ function generate_particles(voltage, layer) {
 
   // Only initialize particles on first run if we actually have lines loaded
   if (voltageLayers[voltage].FIRSTRUN) {
-          if (!layer.lines || layer.lines.length === 0) {
-            // Lines not yet loaded for this layer; skip initialization this frame
-            // Keep FIRSTRUN true so we try again next frame
+    if (!layer.lines || layer.lines.length === 0) {
+      // Lines not yet loaded for this layer; skip initialization this frame
+      // Keep FIRSTRUN true so we try again next frame
+  
+    } else {
+      // voltageLayers[voltage].particles = [];
+      // // Spread particles along the line at first run
+      // layer.lines.forEach(l => {
+      //   const path = [l.from, ...(l.waypoints || []), l.to];
+      //   let pathLength = path.length;
+      //   for (let seg = 0; seg < pathLength - 1; seg++) {
+      //     for (let t = 0; t < 1; t += 0.5) {
+      //       let px = lerp(path[seg].x, path[seg + 1].x, t);
+      //       let py = lerp(path[seg].y, path[seg + 1].y, t);
+      //       layer.particles.push({
+      //         x: px,
+      //         y: py,
+      //         speed: 1,
+      //         path: path,
+      //         currentSegment: seg,
+      //         alpha: map(l.power, 0, maxPerRow[5], 50, 255),
+      //       });
+      //     }
+      //   }
+      // });
+      // // Only clear FIRSTRUN for this layer after particles were created
+      voltageLayers[voltage].FIRSTRUN = false;
+    }
         
-          } else {
-            voltageLayers[voltage].particles = [];
-            // Spread particles along the line at first run
-            layer.lines.forEach(l => {
+  // Generate particles based on line power. Spawn normally at line start. 
+  } else {
+
+    // FIX: PARTICELDENSITIY DEPENDING ON POWER NEEDS TO BE ADJUSTET VIA FRAMECOOUNT
+    // LIKE frameCount % L.POWER === 0
+    // 
+      if (frameCount % 20 === 0) {
+          layer.lines.forEach(l => {
+            for (let i = 0; i < l.power / 20; i++) {  // <-- THIS IS FALSE. FIX. THIS SPAWNS MULTIPLE PARTICELES DEPENDING ON POWER OVER EACHOTHER, IF ALL HAVE SAME SPEED THE TOTALLY OVERLAP. 
               const path = [l.from, ...(l.waypoints || []), l.to];
-              let pathLength = path.length;
-              for (let seg = 0; seg < pathLength - 1; seg++) {
-                for (let t = 0; t < 1; t += 0.2) {
-                  let px = lerp(path[seg].x, path[seg + 1].x, t);
-                  let py = lerp(path[seg].y, path[seg + 1].y, t);
-                  layer.particles.push({
-                    x: px,
-                    y: py,
-                    speed: 1,
-                    path: path,
-                    currentSegment: seg,
-                    alpha: map(l.power, 0, maxPerRow[5], 50, 255),
-                  });
-                }
+              layer.particles.push({
+                x: path[0].x,
+                y: path[0].y,
+                // speed: random(0.1, 0.4),
+                speed: 1,
+                path: path,
+                currentSegment: 0,
+                alpha: map(l.power, 0, maxPerRow[5], 50, 255),   //  <-- FIND EXACT MAX POWER VALUE FROM RIGHT ROW
+              });
               }
-            });
-            // Only clear FIRSTRUN for this layer after particles were created
-            voltageLayers[voltage].FIRSTRUN = false;
-          }
+          });
+          
+      }
+    }
+
+    // Update and draw particles
+  for (let i = layer.particles.length - 1; i >= 0; i--) {
+        let p = layer.particles[i];
+
+        // Get current segment
+        let end   = p.path[p.currentSegment + 1];
         
-        // Generate particles based on line power. Spawn normally at line start. 
-        } else {
-            if (frameCount % 20 === 0) {
-                layer.lines.forEach(l => {
-                  for (let i = 0; i < l.power / 20; i++) {
-                    const path = [l.from, ...(l.waypoints || []), l.to];
-                    layer.particles.push({
-                      x: path[0].x,
-                      y: path[0].y,
-                      // speed: random(0.1, 0.4),
-                      speed: 1,
-                      path: path,
-                      currentSegment: 0,
-                      alpha: map(l.power, 0, maxPerRow[5], 50, 255),   //  <-- FIND EXACT MAX POWER VALUE FROM RIGHT ROW
-                    });
-                    }
-                });
-                
-            }
-          }
+        if (!end) {
+          // Reached end of path
+          layer.particles.splice(i, 1);
+          continue;
+        }
+        
+        let angle = atan2(end.y - p.y, end.x - p.x);
+        p.x += cos(angle) * p.speed;
+        p.y += sin(angle) * p.speed;
 
-          // Update and draw particles
-        for (let i = layer.particles.length - 1; i >= 0; i--) {
-              let p = layer.particles[i];
+        // If close to end of segment, move to next segment
+        if (dist(p.x, p.y, end.x, end.y) < 1) {
+          p.currentSegment++;
+        }
 
-              // Get current segment
-              let end   = p.path[p.currentSegment + 1];
-              
-              if (!end) {
-                // Reached end of path
-                layer.particles.splice(i, 1);
-                continue;
-              }
-              
-              let angle = atan2(end.y - p.y, end.x - p.x);
-              p.x += cos(angle) * p.speed;
-              p.y += sin(angle) * p.speed;
+        // drawingContext.shadowBlur = 15;
+        // drawingContext.shadowColor = color(0, 255, 0, 255);
 
-              // If close to end of segment, move to next segment
-              if (dist(p.x, p.y, end.x, end.y) < 1) {
-                p.currentSegment++;
-              }
-
-              // drawingContext.shadowBlur = 15;
-              // drawingContext.shadowColor = color(0, 255, 0, 255);
-    
-              // draw particle
-              // fill(255, 255, 0, 180);
-              // circle(p.x, p.y, 5);
+        // draw particle
+        fill(255, 255, 0, 60);
+        noStroke();
+        circle(p.x, p.y, 5);
 
 
-              // draw Lines
-              let pxend = p.x + cos(angle) * 3; 
-              let pyend = p.y + sin(angle) * 3;
-              stroke(255, 255, 0, p.alpha);
-              strokeWeight(2);
+        // draw Lines
+        // let pxend = p.x + cos(angle) * 3; 
+        // let pyend = p.y + sin(angle) * 3;
+        // stroke(255, 255, 0, p.alpha);
+        // strokeWeight(2);
 
-              line(p.x, p.y, pxend, pyend); 
-          }
+        // line(p.x, p.y, pxend, pyend); 
+    }
 
 }
 // Timeline rectangle for timestamp selection 
@@ -400,8 +413,12 @@ function circularBarPlot(markerX) {
   let days = 7;
   let timevalues = 96;
   let n = days * timevalues;
-  let margin = 50;
-
+  // let margin = 50;
+  let minpower = -0;  // define min and max power for mapping
+  let maxpower = 0;
+  let PixelperMW = 0; 
+  let MWSteps = 0; // How many MW per circle
+  let radius_circularPlot = 250;
 
   // Find min/max for scaling
   let lineminVal = Infinity, linemaxVal = -Infinity;
@@ -410,35 +427,31 @@ function circularBarPlot(markerX) {
     if (val < lineminVal) lineminVal = val;
     if (val > linemaxVal) linemaxVal = val;
   }
-  console.log("Drawing circular bar plot for", lineSelect);
 
   if (lineSelect.type === "380/220kV") {
     minpower = -200;  // define min and max power for mapping
     maxpower = 200;
-    PixelperMW = 1/2;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.
-    MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+    PixelperMW = 0.5;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.
+    MWSteps = (maxpower*0.1)*PixelperMW;  // Each Circle represents 10% of max power per circle
 
   } else if (lineSelect.type === "132kV") {
     minpower = -100;  // define min and max power for mapping
     maxpower = 100;
-    PixelperMW = 2;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.    } else if (lineSelect.type === "50kV") {
-    MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+    PixelperMW = 1;   
+    MWSteps = (maxpower*0.1)*PixelperMW; 
   } else if (lineSelect.type === "50kV") {
-    minpower = -20;  // define min and max power for mapping
+    minpower = -20;  
     maxpower = 20;
-    PixelperMW = 5;   // How many MW are one pixel in bar length. Use to scale the circular plot appropriately.    }
-    MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+    PixelperMW = 5;   
+    MWSteps = (maxpower*0.1)*PixelperMW; 
 
   } else {
-    minpower = -200;  // define min and max power for mapping
+    minpower = -200;  
     maxpower = 200;
-    PixelperMW = 1/2;
-    MWSteps = (maxpower/100*10)*PixelperMW; // steps of 1% of max power for circles scalled with MWperPixel
+    PixelperMW = 0.5;
+    MWSteps = (maxpower*0.1)*PixelperMW; 
 
   }
-  // let minpower = -200;  // define min and max power for mapping
-  // let maxpower = 200;
-  // let PixelperMW = 1/2;
   let radius = radius_circularPlot;
   let barWidth = 2;
   let nBars = n; // one bar per time step
@@ -474,66 +487,82 @@ function circularBarPlot(markerX) {
     line(x0, y0, x1, y1);
   }
   // Draw circle outline
+  for (let r = -12; r <= 12; r++) {
+    let rr = radius + (MWSteps * r);
+    stroke(150);
+    strokeWeight(1);
+    ellipse(cx, cy, rr * 2, rr * 2);
+    textAlign(CENTER, CENTER);
+    
+  // label only every second circle
+    if (r % 2 === 0) {
+      stroke(60);
+      textAlign(CENTER, CENTER);
+      textSize(10);
+      text((MWSteps * r / PixelperMW) + " MW", cx, cy + rr);
+    }  
+  }
   noFill();
-  stroke(200);
+  stroke(0);
   strokeWeight(2);
   ellipse(cx, cy, radius * 2, radius * 2);
 
-  for (let r = -10; r <= 10; r++) {
-    let rr = radius + (MWSteps * r);
-    stroke(100);
-    strokeWeight(1);
-    ellipse(cx, cy, rr * 2, rr * 2);
-  }
 
-  // Draw line limit circle
-  
-  limit_radius = map(lineSelect.linelimit, 0, maxpower, radius, radius+maxpower*PixelperMW);
+  // Draw limit circle
+  outer_limit_radius = map(lineSelect.linelimit, 0, maxpower, radius, radius+maxpower*PixelperMW);
+  inner_limit_radius = map(lineSelect.linelimit, 0, maxpower, radius, radius-maxpower*PixelperMW);
   stroke("red");
   strokeWeight(2);
-  ellipse(cx, cy, limit_radius*2, limit_radius*2);
+  ellipse(cx, cy, outer_limit_radius*2, outer_limit_radius*2);
+  ellipse(cx, cy, inner_limit_radius*2, inner_limit_radius*2);
 
-  // draw marker line
-  stroke(BKW_Light_Green);
-  strokeWeight(5);
-  push();
-  // translate to center first, then rotate so rotation is around (cx, cy)
-  translate(cx, cy);
-  let markerAngle = map(markerX, timelineRect.x, timelineRect.x + timelineRect.w, -HALF_PI, -HALF_PI + TWO_PI );
-  rotate(markerAngle);
-  line(0, 0, radius, 0);
-  pop();
-
-  ;
-  // --- Add weekday names and ticks inside the circle ---
-  let weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  // Add weekday names and ticks inside the circle 
+  let weekdayNames = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
   let daysInWeek = 7;
-  let timevaluesPerDay = timevalues;
-  let labelRadius = radius - 60;
-  let tickRadiusInner = radius - 100;
-  let tickRadiusOuter = radius - 10;
+  let labelRadius = radius + 150;
+  let tickRadiusInner = radius - 150;
+  let tickRadiusOuter = radius + 150;
   textAlign(CENTER, CENTER);
   textSize(18);
-  fill(255);
-  stroke(180);
+  fill(0);
   strokeWeight(2);
   for (let d = 0; d < daysInWeek; d++) {
     let angle = -HALF_PI + d * (TWO_PI / daysInWeek);
+    
     // Weekday label
     let lx = cx + cos(angle+PI/7) * labelRadius;
     let ly = cy + sin(angle+PI/7) * labelRadius;
     noStroke();
     text(weekdayNames[d], lx, ly);
+    
     // Tick
-    stroke(180);
+    stroke(150);
     let tx0 = cx + cos(angle) * tickRadiusInner;
     let ty0 = cy + sin(angle) * tickRadiusInner;
     let tx1 = cx + cos(angle) * tickRadiusOuter;
     let ty1 = cy + sin(angle) * tickRadiusOuter;
     line(tx0, ty0, tx1, ty1);
   }
-  noStroke();
 
+  // draw marker line
+  stroke(BKW_Light_Green);
+  strokeWeight(5);
+  translate(cx, cy);   // translate to center first, then rotate so rotation is around (cx, cy)
+  let markerAngle = map(markerX, timelineRect.x, timelineRect.x + timelineRect.w, -HALF_PI, -HALF_PI + TWO_PI );
+  rotate(markerAngle);
+  line(0, 0, radius, 0);
+
+  pop();
+}
+
+function resizeToWindow() {
+  scaleFactor = min(windowWidth / DESIGN_W, windowHeight / DESIGN_H);
+  resizeCanvas(DESIGN_W * scaleFactor, DESIGN_H * scaleFactor);
+}
+
+function windowResized() {
+  // resizeToWindow();
+  resizeToWindow();
 }
 
 
@@ -552,13 +581,18 @@ function setup() {
 
     // Load substation and line data
     load_lines(timestamp);  // load line data in setup after power timeseries is fully loaded in preload()
+    
 
     // Set up canvas
     noStroke();
 
     // createCanvas(canvasWidth, canvasHeight, SVG); // for SVG export
-    createCanvas(canvasWidth, canvasHeight);
-    
+    // canvasHeight = windowHeight;
+    // canvasWidth = windowWidth;
+    // createCanvas(canvasWidth, canvasHeight);
+    createCanvas(10, 10);
+
+    resizeToWindow();
     // Simple: min, max, average per row
     minPerRow = [];
     maxPerRow = [];
@@ -608,10 +642,11 @@ function draw() {
 
     background(colorBackground);
     push();
+    scale(scaleFactor);
     // tint(255, 255, 255, 255);  
-    image(BKWmapImg, mapX-50, mapY, mapWidth*BKWmapImgscale, mapHeight*BKWmapImgscale);  
+    image(BKWmapImg, mapX-50, mapY, mapWidth, mapHeight);  
     // noTint();  
-    pop();
+    // pop();
     if (substations.length === 0) {
         text("Loading data...", width / 2, height / 2);
         return;
@@ -625,7 +660,9 @@ function draw() {
         strokeWeight(2);
         layer.lines.forEach(l => {
               // 🟢 Set stroke color based on voltage type
-              if (l.type === "380/220kV") {
+              if (l.power === null || isNaN(l.power)) {
+                stroke(150); // Gray for missing data
+              } else if (l.type === "380/220kV") {
                 stroke(color380220kV);       // Green
               } else if (l.type === "132kV") {
                 stroke(color132kV);     // Orange
@@ -674,7 +711,7 @@ function draw() {
           ellipse(sub.x, sub.y, size, size);
 
           // Show name only if mouse is hovering over substation
-          let d = dist(mouseX, mouseY, sub.x, sub.y);
+          let d = dist(mouseX/scaleFactor, mouseY/scaleFactor, sub.x, sub.y);
           if (d < 5) { // Show name if mouse is within 10 pixels
             textAlign(CENTER, CENTER);
             textSize(20);
@@ -726,8 +763,8 @@ function draw() {
     // Draw Mouse Pos onto screen
     if (substations.length > 0) {
       // Convert canvas to original coordinates
-      let origX = map(mouseX, 50, gridWidth, minX, maxX);
-      let origY = map(mouseY, 50, gridHeight, minY, maxY);
+      let origX = map(mouseX/scaleFactor, 50, gridWidth, minX, maxX);
+      let origY = map(mouseY/scaleFactor, 50, gridHeight, minY, maxY);
     
       // Optional: round for readability
       origX = nf(origX, 1, 0);  // or use toFixed()
@@ -735,13 +772,13 @@ function draw() {
     
       // Draw background label
       fill(255, 255, 255, 200);
-      rect(mouseX+20, mouseY, 50, 30, 5);
+      rect(mouseX/scaleFactor+20, mouseY/scaleFactor, 50, 30, 5);
     
       // Draw text
       fill(0);
       textSize(10);
-      text(`X: ${origX}`, mouseX + 40, mouseY + 20);
-      text(`Y: ${origY}`, mouseX + 40, mouseY + 10);
+      text(`X: ${origX}`, mouseX/scaleFactor + 40, mouseY/scaleFactor + 20);
+      text(`Y: ${origY}`, mouseX/scaleFactor + 40, mouseY/scaleFactor + 10);
     }
     
     // textSize(10);
@@ -759,9 +796,11 @@ function draw() {
     textAlign(RIGHT, BOTTOM);
     text(`Average Power: ${average_power !== null ? average_power.toFixed(2) : "N/A"}`, canvasWidth - 20, canvasHeight - 10);
 
-  if (magnifier) {
-    drawMagnifier(mouseX, mouseY, 100, 2);
-  }
+    if (magnifier) {
+      drawMagnifier(mouseX/scaleFactor, mouseY/scaleFactor, 100, 2);
+    }
+    pop();
+
 }
 
 function keyPressed() {
@@ -798,46 +837,37 @@ function keyPressed() {
 
   }
 
-  function drawTitle() {
-    textAlign(RIGHT, TOP);
-    textSize(50);
-    // textFont(klintFont);
-    fill(0);
-    textStyle(BOLD);
-    text("Eine Woche im Hochspannungsnetz\nBern, Jura und Solothurn", canvasWidth-10, 10);
-    textStyle(NORMAL);
-  }
+function drawTitle() {
+
+  textAlign(RIGHT, TOP);
+  fill(0);
+
+  // Titel
+  textSize(50);
+  textStyle(BOLD);
+  text("Eine Woche im Hochspannungsnetz",canvasWidth - 10,10);
+
+  // Lead / Untertitel
+  textSize(18);
+  textStyle(NORMAL);
+  // text("Diese Visualisierung macht die Energieflüsse im Hochspannungsnetz\nim Raum Bern, Jura und Solothurn",canvasWidth - 10,70);
+ text(
+    "Das Hochspannungsnetz der BKW Energie AG besteht" +
+    "aus mehreren Tausend Kilometer Leitung, verteilt auf\n" +
+    "zwei Spannungsebenen - 50 kV und 132 kV (Kilovolt)." +
+    "Hinzu kommt das überlagerte Höchstspannungsnetz der\n" +
+    "Swissgrid. Diese vielen Hochspannungsleitungen formen" +
+    "ein komplexes vermaschtes Netz und stellen den über-\n" +
+    "regionalen Transport der elektrischen Energie sicher." +
+    "Zusammen bilden sie das Rückgrat einer stabilen \n" +
+    "Energieversorgung. Dieses Visualisierung macht die Energieflüsse in diesem komplexen Netz sichtbar.",
+    canvasWidth - 10,
+    70
+  );
+}
 
 
-  
-// Detect line click and update colName for timeseries plot
-function mouseDragged() {
-  // Timeline interaction
-  if (
-    mouseY > timelineRect.y && mouseY < timelineRect.y + timelineRect.h &&
-    mouseX > timelineRect.x && mouseX < timelineRect.x + timelineRect.w
-  ) {
-    let nTimestamps = P_table.getRowCount();
-    let idx = Math.round(map(mouseX, timelineRect.x, timelineRect.x + timelineRect.w, 0, nTimestamps - 1));
-    idx = constrain(idx, 0, nTimestamps - 1);
-    let newTimestamp = P_table.getString(idx, 0);
-    if (newTimestamp !== timestamp) {
-      timestamp = newTimestamp;
-      // Clear lines and particles for all voltage layers
-      for (let voltage in voltageLayers) {
-        voltageLayers[voltage].lines = [];
-        voltageLayers[voltage].particles = [];
-        voltageLayers[voltage].FIRSTRUN = true;
-      }
-      setup();
-    }
-    timelineActive = true;
-    return;
-  }
-  
-
-
-
+function mousePressed() {
 
   // Check line clicks  
   let minDist = 10; // px threshold for click
@@ -856,11 +886,11 @@ function mouseDragged() {
         // Closest point on segment
         let dx = x1 - x0;
         let dy = y1 - y0;
-        let t = ((mouseX - x0) * dx + (mouseY - y0) * dy) / (dx*dx + dy*dy);
+        let t = ((mouseX/scaleFactor - x0) * dx + (mouseY/scaleFactor - y0) * dy) / (dx*dx + dy*dy);
         t = constrain(t, 0, 1);
         let px = x0 + t * dx;
         let py = y0 + t * dy;
-        let d = dist(mouseX, mouseY, px, py);
+        let d = dist(mouseX/scaleFactor, mouseY/scaleFactor, px, py);
         if (d < minDist) {
           // Ensure lineAbbrev is a non-empty string
           if (typeof l.lineAbbrev !== 'string' || l.lineAbbrev.trim() === '') {
@@ -882,6 +912,37 @@ function mouseDragged() {
   if (found) {
     print('Selected line:', colName);
   }
+}
+
+  
+// Detect line click and update colName for timeseries plot
+function mouseDragged() {
+  // Timeline interaction
+  if (
+    mouseY/scaleFactor > timelineRect.y && mouseY/scaleFactor < timelineRect.y + timelineRect.h &&
+    mouseX/scaleFactor > timelineRect.x && mouseX/scaleFactor < timelineRect.x + timelineRect.w
+  ) {
+    let nTimestamps = P_table.getRowCount();
+    let idx = Math.round(map(mouseX/scaleFactor, timelineRect.x, timelineRect.x + timelineRect.w, 0, nTimestamps - 1));
+    idx = constrain(idx, 0, nTimestamps - 1);
+    let newTimestamp = P_table.getString(idx, 0);
+    if (newTimestamp !== timestamp) {
+      timestamp = newTimestamp;
+      // Clear lines and particles for all voltage layers
+      for (let voltage in voltageLayers) {
+        voltageLayers[voltage].lines = [];
+        voltageLayers[voltage].particles = [];
+        voltageLayers[voltage].FIRSTRUN = true;
+      }
+      setup();
+    }
+    timelineActive = true;
+    return;
+  }
+  
+
+
+
 
 
   

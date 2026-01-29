@@ -1,9 +1,9 @@
 ﻿Type;From;To;Waypoints;Voltage;Line_Abbreviation;Line_Name;GW
-380/220kV;Bassecourt;Mambelin;;380;LTH 3BACMAM;380 Ltg. Bassecourt-Mambelin;250
-380/220kV;Bassecourt;Sierentz;;380;LTH 3BACSIR;380 Ltg. Bassecourt-Sierentz;250
-380/220kV;Bassecourt;Laufenburg;;380;LTH 3BACLAU;380 Ltg. Bassecourt-Laufenburg;250
-380/220kV;Bassecourt;Bickigen;;380;LTH 3BACBIK;380 Ltg. Bassecourt-Bickigen;250
-380/220kV;Bickigen;Laufenburg;;380;LTH 3BIKLAU;380 Ltg. Bickigen-Laufenburg;250
+380/220kV;Bassecourt;Mambelin;;380;LTH 3BACMAM;380 Ltg. Bassecourt-Mambelin;250.0
+380/220kV;Bassecourt;Sierentz;;380;LTH 3BACSIR;380 Ltg. Bassecourt-Sierentz;250.0
+380/220kV;Bassecourt;Laufenburg;;380;LTH 3BACLAU;380 Ltg. Bassecourt-Laufenburg;250.0
+380/220kV;Bassecourt;Bickigen;;380;LTH 3BACBIK;380 Ltg. Bassecourt-Bickigen;250.0
+380/220kV;Bickigen;Laufenburg;;380;LTH 3BIKLAU;380 Ltg. Bickigen-Laufenburg;250.0
 380/220kV;Asphard;Laufenburg;;;;not found;
 380/220kV;Asphard;Gösgen;;;;not found;
 380/220kV;Asphard;Ormalingen;;;;not found;
@@ -11,18 +11,18 @@
 380/220kV;Lindenholz;Sursee;;;;not found;
 380/220kV;Gösgen;Sursee;;;;not found;
 380/220kV;Mettlen;Sursee;;;;not found;
-380/220kV;Littau;Mettlen;;220;LTH 2LITMET;220 Ltg. Littau-Mettlen;150
-380/220kV;Giswil;Littau;;220;LTH 2GISLIT;220 Ltg. Giswil-Littau;150
-380/220kV;Giswil;Innertkirchen;;220;LTH 2GISINN;220 Ltg. Giswil-Innertkirchen;150
-380/220kV;Innertkirchen;Mettlen;;220;LTH 2INNMET;220 Ltg. Innertkirchen-Mettlen;150
+380/220kV;Littau;Mettlen;;220;LTH 2LITMET;220 Ltg. Littau-Mettlen;150.0
+380/220kV;Giswil;Littau;;220;LTH 2GISLIT;220 Ltg. Giswil-Littau;150.0
+380/220kV;Giswil;Innertkirchen;;220;LTH 2GISINN;220 Ltg. Giswil-Innertkirchen;150.0
+380/220kV;Innertkirchen;Mettlen;;220;LTH 2INNMET;220 Ltg. Innertkirchen-Mettlen;150.0
 380/220kV;Innertkirchen;Grimsel;;;;not found;
 380/220kV;Innertkirchen;Handeck;;;;not found;
-380/220kV;Handeck;Peccia;;220;LTH 2HANPEC;220 Ltg. Handeck-Peccia;150
+380/220kV;Handeck;Peccia;;220;LTH 2HANPEC;220 Ltg. Handeck-Peccia;150.0
 380/220kV;Bavona;Peccia;;;;not found;
 380/220kV;Bavona;Robiei;;;;not found;
 380/220kV;Robiei;Airolo;;;;not found;
 380/220kV;Airolo;Fiesch;;;;not found;
-380/220kV;Handeck;Mörel;;220;LTH 2HANMOE;220 Ltg. Handeck-Mörel;150
+380/220kV;Handeck;Mörel;;220;LTH 2HANMOE;220 Ltg. Handeck-Mörel;150.0
 380/220kV;Fiesch;Mörel;;;;not found;
 380/220kV;Mörel;Bitsch;;;;not found;
 380/220kV;Mörel;Chippis;;;;not found;
@@ -41,195 +41,198 @@
 380/220kV;Cornier;St. Triphon;;;;not found;
 380/220kV;Botterens;St. Triphon;;;;not found;
 380/220kV;Hauterive;St. Triphon;;;;not found;
-380/220kV;Botterens;Mühleberg;;220;LTH 2BOTMUE;220 Ltg. Botterens-Mühleberg;150
-380/220kV;Hauterive;Mühleberg;;220;LTH 2HAUMUE;220 Ltg. Hauterive-Mühleberg;150
-380/220kV;Kerzers;Mühleberg;;220;LTH 2KERMUE;220 Ltg. Kerzers-Mühleberg;150
-380/220kV;Galmiz;Mühleberg;;220;LTH 2GALMUE;220 Ltg. Galmiz-Mühleberg;150
+380/220kV;Botterens;Mühleberg;;220;LTH 2BOTMUE;220 Ltg. Botterens-Mühleberg;150.0
+380/220kV;Hauterive;Mühleberg;;220;LTH 2HAUMUE;220 Ltg. Hauterive-Mühleberg;150.0
+380/220kV;Kerzers;Mühleberg;;220;LTH 2KERMUE;220 Ltg. Kerzers-Mühleberg;150.0
+380/220kV;Galmiz;Mühleberg;;220;LTH 2GALMUE;220 Ltg. Galmiz-Mühleberg;150.0
 380/220kV;Kerzers;Galmiz;;;;not found;
-380/220kV;Bassecourt;Mühleberg;;220;LTH 2BACMUE;220 Ltg. Bassecourt-Mühleberg (alt);150
-380/220kV;Bickigen;Mühleberg;;220;LTH 2BIKMUE;220 Ltg. Bickigen-Mühleberg;150
-380/220kV;Bickigen;Mühleberg;;220;LTH 2BIKMUE;220 Ltg. Bickigen-Mühleberg;150
+380/220kV;Bassecourt;Mühleberg;;220;LTH 2BACMUE;220 Ltg. Bassecourt-Mühleberg (alt);150.0
+380/220kV;Bickigen;Mühleberg;;220;LTH 2BIKMUE;220 Ltg. Bickigen-Mühleberg;150.0
+380/220kV;Bickigen;Mühleberg;;220;LTH 2BIKMUE;220 Ltg. Bickigen-Mühleberg;150.0
 380/220kV;Bickigen;Flumental;;;;not found;
 380/220kV;Flumental;Gösgen;;;;not found;
-380/220kV;Laufenburg;Lindenholz;;220;LTH 2LAULIN;220 Ltg. Laufenburg-Lindenholz;150
-380/220kV;Bickigen;Oftringen;;220;LTH 2BIKOFT;220 Ltg. Bickigen-Oftringen;150
+380/220kV;Laufenburg;Lindenholz;;220;LTH 2LAULIN;220 Ltg. Laufenburg-Lindenholz;150.0
+380/220kV;Bickigen;Oftringen;;220;LTH 2BIKOFT;220 Ltg. Bickigen-Oftringen;150.0
 380/220kV;Bickigen;Mettlen;;;;not found;
 380/220kV;Bickigen;Innertkirchen;3518,3585|3567,4491;;;not found;
 380/220kV;Bickigen;Mettlen;;;;not found;
-380/220kV;Bickigen;Wimmis;;220;LTH 2BIKWIM;220 Ltg. Bickigen-Wimmis;150
-380/220kV;Bickigen;Chippis;;380;LTH 3BIKCHI;380 Ltg. Bickigen-Chippis;250
-380/220kV;Chippis;Wimmis;;220;LTH 2CHIWIM;220 Ltg. Chippis-Wimmis;150
-380/220kV;Innertkirchen;Wimmis;;220;LTH 2INNWIM;220 Ltg. Innertkirchen-Wimmis;150
+380/220kV;Bickigen;Wimmis;;220;LTH 2BIKWIM;220 Ltg. Bickigen-Wimmis;150.0
+380/220kV;Bickigen;Chippis;;380;LTH 3BIKCHI;380 Ltg. Bickigen-Chippis;250.0
+380/220kV;Chippis;Wimmis;;220;LTH 2CHIWIM;220 Ltg. Chippis-Wimmis;150.0
+380/220kV;Innertkirchen;Wimmis;;220;LTH 2INNWIM;220 Ltg. Innertkirchen-Wimmis;150.0
 380/220kV;Froloo;Lachmatt;;;;not found;
 380/220kV;Lachmatt;Münchenwilen;;;;not found;
 380/220kV;Froloo;Ormalingen;;;;not found;
 380/220kV;Münchenwilen;Laufenburg;;;;not found;
-132kV;Birsbrücke;Dolderweg;;132;LTH 1BIBDOL;132 Ltg. Birsbrücke-Dolderweg (IWB);75
-132kV;Dolderweg;Voltastrasse;;132;LTH 1DOLVOL;132 Ltg. Dolderweg-Voltastrasse (IWB);75
+132kV;Birsbrücke;Dolderweg;;132;LTH 1BIBDOL;132 Ltg. Birsbrücke-Dolderweg (IWB);75.0
+132kV;Dolderweg;Voltastrasse;;132;LTH 1DOLVOL;132 Ltg. Dolderweg-Voltastrasse (IWB);75.0
 132kV;Voltastrasse;Wasenring;;;;not found;
 132kV;Wasenring;Margareten;;;;not found;
 132kV;Margareten;Jakobsweg;;;;not found;
 132kV;Birsbrücke;Jakobsweg;;;;not found;
 132kV;Jakobsweg;Brislach;3162,1252;;;not found;
-132kV;Birsbrücke;Wangen;3192,1252;132;LTH 1BIBWAN;132 Ltg. Birsbrücke-Wangen (IWB);75
+132kV;Birsbrücke;Wangen;3192,1252;132;LTH 1BIBWAN;132 Ltg. Birsbrücke-Wangen (IWB);75.0
 132kV;Brislach;Wangen;;;;not found;
-132kV;Bassecourt;Brislach;;132;LTH 1BACBRI;132 Ltg. Bassecourt-Brislach;75
-132kV;Bickigen;Wangen;;132;LTH 1BIKWAN;132 Ltg. Bickigen-Wangen (IWB);75
-132kV;Bickigen;Herzogenbuchsee;;132;LTH 1BIKHEB;132 Ltg. Bickigen-Herzogenbuchsee;75
-132kV;Flumenthal;Wangen;;132;LTH 1FLUWAN;132 Ltg. Flumenthal-Wangen;75
-132kV;Birchi;Wangen;;132;LTH 1BIRWAN;132 Ltg. Birchi-Wangen;75
-132kV;Birchi;Wangen;;132;LTH 1BIRWAN;132 Ltg. Birchi-Wangen;75
-132kV;Birchi;Selzach;2554,2780;132;LTH 1BIRSEL;132 Ltg. Birchi-Selzach;75
-132kV;Bickigen;Utzenstorf;;132;LTH 1BIKUTZ;132 Ltg. Bickigen-Utzenstorf;75
+132kV;Bassecourt;Brislach;;132;LTH 1BACBRI;132 Ltg. Bassecourt-Brislach;75.0
+132kV;Bickigen;Wangen;;132;LTH 1BIKWAN;132 Ltg. Bickigen-Wangen (IWB);75.0
+132kV;Bickigen;Herzogenbuchsee;;132;LTH 1BIKHEB;132 Ltg. Bickigen-Herzogenbuchsee;75.0
+132kV;Flumenthal;Wangen;;132;LTH 1FLUWAN;132 Ltg. Flumenthal-Wangen;75.0
+132kV;Birchi;Wangen;;132;LTH 1BIRWAN;132 Ltg. Birchi-Wangen;75.0
+132kV;Birchi;Wangen;;132;LTH 1BIRWAN;132 Ltg. Birchi-Wangen;75.0
+132kV;Birchi;Selzach;2554,2780;132;LTH 1BIRSEL;132 Ltg. Birchi-Selzach;75.0
+132kV;Bickigen;Utzenstorf;;132;LTH 1BIKUTZ;132 Ltg. Bickigen-Utzenstorf;75.0
 132kV;Utzenstorf;Carbagas;;;;not found;
 132kV;Utzenstorf;Birchi;;;;not found;
-132kV;Bickigen;Birchi;2900,3250|2800,3100;132;LTH 1BIKBIR;132 Ltg. Bickigen-Birchi;75
-132kV;Bickigen;Heimiswil;;132;LTH 1BIKHEI;132 Ltg. Bickigen-Heimiswil;75
-132kV;Heimiswil;Sumiswald;;132;LTH 1HEISUM;132 Ltg. Heimiswil-Sumiswald;75
-132kV;Emmenmatt;Sumiswald;;132;LTH 1EMASUM;132 Ltg. Emmenmatt-Sumiswald;75
-132kV;Emmenmatt;Grosshöchstetten;;132;LTH 1EMAGRO;132 Ltg. Emmenmatt-Grosshöchstetten;75
-132kV;Grosshöchstetten;Wichtrach;;132;LTH 1GROWIC;132 Ltg. Grosshöchstetten-Wichtrach;75
-132kV;Steffisburg;Wichtrach;;132;LTH 1STEWIC;132 Ltg. Steffisburg-Wichtrach;75
-132kV;Steffisburg;Wattenwil;;132;LTH 1STEWAT;132 Ltg. Steffisburg-Wattenwil;75
-132kV;Gasel;Wattenwil;;132;LTH 1GASWAT;132 Ltg. Gasel-Wattenwil;75
-132kV;Wattenwil;Wilderswil;;132;LTH 1WATWIL;132 Ltg. Wattenwil-Wilderswil;75
-132kV;Innertkirchen;Wilderswil;;132;LTH 1INNWIL;132 Ltg. Innertkirchen-Wilderswil;75
-132kV;Aaregg;Innertkirchen;;132;LTH 1AREINN;132 Ltg. Aaregg-Innertkirchen;75
-132kV;Grosshöchstetten;Worb;;132;LTH 1GROWOR;132 Ltg. Grosshöchstetten-Worb;75
-132kV;Belp;Worb;;132;LTH 1BELWOR;132 Ltg. Belp-Worb;75
-132kV;Belp;Gasel;;132;LTH 1BELGAS;132 Ltg. Belp-Gasel;75
-132kV;Belp;Köniz;;132;LTH 1BELKOE;132 Ltg. Belp-Köniz;75
-132kV;Gasel;Köniz;;132;LTH 1GASKOE;132 Ltg. Gasel-Köniz;75
-132kV;Gasel;Riedbach;;132;LTH 1GASRIE;132 Ltg. Gasel-Riedbach;75
-132kV;Mühleberg;Riedbach;;132;LTH 1MUERIE;132 Ltg. Mühleberg-Riedbach;75
-132kV;Holligen;Riedbach;;132;LTH 1HOLRIE;132 Ltg. Holligen-Riedbach (EWB);75
-132kV;Holligen;Monbijou;;132;LTH 1HOLMON;132 Ltg. Holligen-Monbijou (EWB);75
+132kV;Bickigen;Birchi;2900,3250|2800,3100;132;LTH 1BIKBIR;132 Ltg. Bickigen-Birchi;75.0
+132kV;Bickigen;Heimiswil;;132;LTH 1BIKHEI;132 Ltg. Bickigen-Heimiswil;75.0
+132kV;Heimiswil;Sumiswald;;132;LTH 1HEISUM;132 Ltg. Heimiswil-Sumiswald;75.0
+132kV;Emmenmatt;Sumiswald;;132;LTH 1EMASUM;132 Ltg. Emmenmatt-Sumiswald;75.0
+132kV;Emmenmatt;Grosshöchstetten;;132;LTH 1EMAGRO;132 Ltg. Emmenmatt-Grosshöchstetten;75.0
+132kV;Grosshöchstetten;Wichtrach;;132;LTH 1GROWIC;132 Ltg. Grosshöchstetten-Wichtrach;75.0
+132kV;Steffisburg;Wichtrach;;132;LTH 1STEWIC;132 Ltg. Steffisburg-Wichtrach;75.0
+132kV;Steffisburg;Wattenwil;;132;LTH 1STEWAT;132 Ltg. Steffisburg-Wattenwil;75.0
+132kV;Gasel;Wattenwil;;132;LTH 1GASWAT;132 Ltg. Gasel-Wattenwil;75.0
+132kV;Wattenwil;Wilderswil;;132;LTH 1WATWIL;132 Ltg. Wattenwil-Wilderswil;75.0
+132kV;Innertkirchen;Wilderswil;;132;LTH 1INNWIL;132 Ltg. Innertkirchen-Wilderswil;75.0
+132kV;Aaregg;Innertkirchen;;132;LTH 1AREINN;132 Ltg. Aaregg-Innertkirchen;75.0
+132kV;Grosshöchstetten;Worb;;132;LTH 1GROWOR;132 Ltg. Grosshöchstetten-Worb;75.0
+132kV;Belp;Worb;;132;LTH 1BELWOR;132 Ltg. Belp-Worb;75.0
+132kV;Belp;Gasel;;132;LTH 1BELGAS;132 Ltg. Belp-Gasel;75.0
+132kV;Belp;Köniz;;132;LTH 1BELKOE;132 Ltg. Belp-Köniz;75.0
+132kV;Gasel;Köniz;;132;LTH 1GASKOE;132 Ltg. Gasel-Köniz;75.0
+132kV;Gasel;Riedbach;;132;LTH 1GASRIE;132 Ltg. Gasel-Riedbach;75.0
+132kV;Mühleberg;Riedbach;;132;LTH 1MUERIE;132 Ltg. Mühleberg-Riedbach;75.0
+132kV;Holligen;Riedbach;;132;LTH 1HOLRIE;132 Ltg. Holligen-Riedbach (EWB);75.0
+132kV;Holligen;Monbijou;;132;LTH 1HOLMON;132 Ltg. Holligen-Monbijou (EWB);75.0
 132kV;Monbijou;Schlosshalde;;;;not found;
 132kV;Schlosshalde;Gümligen;;;;not found;
-132kV;Gümligen;Worb;;132;LTH 1GUMWOR;132 Ltg. Gümligen-Worb;75
-132kV;Deisswil;Worb;;132;LTH 1DEIWOR;132 Ltg. Deisswil-Worb;75
-132kV;Deisswil;Habstetten;;132;LTH 1DEIHAB;132 Ltg. Deisswil-Habstetten;75
-132kV;Habstetten;Wankdorf;;132;LTH 1HABWAD;132 Ltg. Habstetten-Wankdorf (EWB);75
-132kV;Engehalde;Wankdorf;;132;LTH 1ENHWAD;132 Ltg. Engehalde-Wankdorf (alt);75
-132kV;Engehalde;Neubrück;;132;LTH 1ENHNEU;132 Ltg. Engehalde-Neubrück (alt);75
+132kV;Gümligen;Worb;;132;LTH 1GUMWOR;132 Ltg. Gümligen-Worb;75.0
+132kV;Deisswil;Worb;;132;LTH 1DEIWOR;132 Ltg. Deisswil-Worb;75.0
+132kV;Deisswil;Habstetten;;132;LTH 1DEIHAB;132 Ltg. Deisswil-Habstetten;75.0
+132kV;Habstetten;Wankdorf;;132;LTH 1HABWAD;132 Ltg. Habstetten-Wankdorf (EWB);75.0
+132kV;Engehalde;Wankdorf;;132;LTH 1ENHWAD;132 Ltg. Engehalde-Wankdorf (alt);75.0
+132kV;Engehalde;Neubrück;;132;LTH 1ENHNEU;132 Ltg. Engehalde-Neubrück (alt);75.0
 132kV;Engehalde;Mühleberg;;;;not found;
-132kV;Habstetten;Worblaufen;;132;LTH 1HABWOL;132 Ltg. Habstetten-Worblaufen (EWB);75
-132kV;Engehalde;Worblaufen;;132;LTH 1ENHWOL;132 Ltg. Engehalde-Worblaufen (EWB);75
-132kV;Habstetten;Wankdorf;;132;LTH 1HABWAD;132 Ltg. Habstetten-Wankdorf (EWB);75
-132kV;Engehalde;Wankdorf;;132;LTH 1ENHWAD;132 Ltg. Engehalde-Wankdorf (alt);75
-132kV;Mühleberg;Neubrück;;132;LTH 1MUENEU;132 Ltg. Mühleberg-Neubrück (EWB) (alt);75
-132kV;Habstetten;Schönbühl;;132;LTH 1HABSOE;132 Ltg. Habstetten-Schönbühl;75
-132kV;Burgdorf;Schönbühl;;132;LTH 1BURSOE;132 Ltg. Burgdorf-Schönbühl;75
-132kV;Bickigen;Burgdorf;;132;LTH 1BIKBUR;132 Ltg. Bickigen-Burgdorf (EWB);75
-132kV;Bickigen;Habstetten;;132;LTH 1BIKHAB;132 Ltg. Bickigen-Habstetten (EWB);75
-132kV;Burgdorf;Habstetten;;132;LTH 1BURHAB;132 Ltg. Burgdorf-Habstetten;75
-132kV;Kappelen;Mühleberg;1870, 3562;132;LTH 1KAPMUE;132 Ltg. Kappelen-Mühleberg;75
-132kV;Brügg;Kappelen;;132;LTH 1BRUKAP;132 Ltg. Brügg-Kappelen;75
-132kV;Brügg;Mett;;132;LTH 1BRUMTT;132 Ltg. Brügg-Mett;75
-132kV;Mett;Pieterlen;;132;LTH 1MTTPIE;132 Ltg. Mett-Pieterlen;75
-132kV;Pieterlen;Sorvilier;;132;LTH 1PIESOR;132 Ltg. Pieterlen-Sorvilier;75
-132kV;Kappelen;Pieterlen;;132;LTH 1KAPPIE;132 Ltg. Kappelen-Pieterlen;75
-132kV;Bassecourt;Sorvilier;;132;LTH 1BACSOR;132 Ltg. Bassecourt-Sorvilier;75
-132kV;Bassecourt;Porrentruy;;132;LTH 1BACPOR;132 Ltg. Bassecourt-Porrentruy;75
+132kV;Habstetten;Worblaufen;;132;LTH 1HABWOL;132 Ltg. Habstetten-Worblaufen (EWB);75.0
+132kV;Engehalde;Worblaufen;;132;LTH 1ENHWOL;132 Ltg. Engehalde-Worblaufen (EWB);75.0
+132kV;Habstetten;Wankdorf;;132;LTH 1HABWAD;132 Ltg. Habstetten-Wankdorf (EWB);75.0
+132kV;Engehalde;Wankdorf;;132;LTH 1ENHWAD;132 Ltg. Engehalde-Wankdorf (alt);75.0
+132kV;Mühleberg;Neubrück;;132;LTH 1MUENEU;132 Ltg. Mühleberg-Neubrück (EWB) (alt);75.0
+132kV;Habstetten;Schönbühl;;132;LTH 1HABSOE;132 Ltg. Habstetten-Schönbühl;75.0
+132kV;Burgdorf;Schönbühl;;132;LTH 1BURSOE;132 Ltg. Burgdorf-Schönbühl;75.0
+132kV;Bickigen;Burgdorf;;132;LTH 1BIKBUR;132 Ltg. Bickigen-Burgdorf (EWB);75.0
+132kV;Bickigen;Habstetten;;132;LTH 1BIKHAB;132 Ltg. Bickigen-Habstetten (EWB);75.0
+132kV;Burgdorf;Habstetten;;132;LTH 1BURHAB;132 Ltg. Burgdorf-Habstetten;75.0
+132kV;Kappelen;Mühleberg;1870, 3562;132;LTH 1KAPMUE;132 Ltg. Kappelen-Mühleberg;75.0
+132kV;Brügg;Kappelen;;132;LTH 1BRUKAP;132 Ltg. Brügg-Kappelen;75.0
+132kV;Brügg;Mett;;132;LTH 1BRUMTT;132 Ltg. Brügg-Mett;75.0
+132kV;Mett;Pieterlen;;132;LTH 1MTTPIE;132 Ltg. Mett-Pieterlen;75.0
+132kV;Pieterlen;Sorvilier;;132;LTH 1PIESOR;132 Ltg. Pieterlen-Sorvilier;75.0
+132kV;Kappelen;Pieterlen;;132;LTH 1KAPPIE;132 Ltg. Kappelen-Pieterlen;75.0
+132kV;Bassecourt;Sorvilier;;132;LTH 1BACSOR;132 Ltg. Bassecourt-Sorvilier;75.0
+132kV;Bassecourt;Porrentruy;;132;LTH 1BACPOR;132 Ltg. Bassecourt-Porrentruy;75.0
 132kV;Bassecourt;Wasenring;2696,791;;;not found;
-132kV;Bassecourt;Voltastrasse;1775,1800|2654,759;132;LTH 1BACVOL;132 Ltg. Bassecourt-Voltastrasse (IWB);75
+132kV;Bassecourt;Voltastrasse;1775,1800|2654,759;132;LTH 1BACVOL;132 Ltg. Bassecourt-Voltastrasse (IWB);75.0
 132kV;Wasenring;Froloo;;;;not found;
-132kV;Burgdorf;Habstetten;;132;LTH 1BURHAB;132 Ltg. Burgdorf-Habstetten;75
-132kV;Burgdorf;Habstetten;;132;LTH 1BURHAB;132 Ltg. Burgdorf-Habstetten;75
-132kV;Burgdorf;Habstetten;;132;LTH 1BURHAB;132 Ltg. Burgdorf-Habstetten;75
-132kV;Burgdorf;Habstetten;;132;LTH 1BURHAB;132 Ltg. Burgdorf-Habstetten;75
-50kV;Birchi;KEBAG;;50;LTH 5BIRKEB;50 Ltg. Birchi-KEBAG;50
-50kV;Birchi;Zuchwil;;50;LTH 5BIRZUW;50 Ltg. Birchi-Zuchwil;50
-50kV;Luterbach;Zuchwil;;50;LTH 5LUBZUW;50 Ltg. Luterbach-Zuchwil;50
+132kV;Burgdorf;Habstetten;;132;LTH 1BURHAB;132 Ltg. Burgdorf-Habstetten;75.0
+132kV;Burgdorf;Habstetten;;132;LTH 1BURHAB;132 Ltg. Burgdorf-Habstetten;75.0
+132kV;Burgdorf;Habstetten;;132;LTH 1BURHAB;132 Ltg. Burgdorf-Habstetten;75.0
+132kV;Burgdorf;Habstetten;;132;LTH 1BURHAB;132 Ltg. Burgdorf-Habstetten;75.0
+50kV;Birchi;KEBAG;;50;LTH 5BIRKEB;50 Ltg. Birchi-KEBAG;20.0
+50kV;Birchi;Zuchwil;;50;LTH 5BIRZUW;50 Ltg. Birchi-Zuchwil;20.0
+50kV;Luterbach;Zuchwil;;50;LTH 5LUBZUW;50 Ltg. Luterbach-Zuchwil;20.0
 50kV;Luterbach;Flumenthal KW;;;;not found;
 50kV;Flumenthal KW;Flumenthal;;;;not found;
-50kV;Flumenthal;Gerlafingen;;50;LTH 5FLUGER;50 Ltg. Flumenthal-Gerlafingen;50
+50kV;Flumenthal;Gerlafingen;;50;LTH 5FLUGER;50 Ltg. Flumenthal-Gerlafingen;20.0
 50kV;Zuchwil;Solothurn 1;;;;not found;
 50kV;Solothurn 2;Solothurn 1;;;;not found;
 50kV;Solothurn 2;Langendorf;;;;not found;
-50kV;Langendorf;Selzach;;50;LTH 5LADSEL;50 Ltg. Langendorf-Selzach;50
-50kV;Birchi;Selzach;;132;LTH 1BIRSEL;132 Ltg. Birchi-Selzach;75
-50kV;Birchi;Langendorf;;50;LTH 5BIRLAD;50 Ltg. Birchi-Langendorf;50
-50kV;Grenchen 1;Selzach;;;;not found;
-50kV;Grenchen 2;Selzach;;;;not found;
-50kV;Grenchen 2;Pieterlen;;;;not found;
-50kV;Grenchen 2;Grenchen 1;;;;not found;
-50kV;Mett;Reuchenette;;50;LTH 5MTTREU;50 Ltg. Mett-Reuchenette;50
-50kV;Reuchenette;Sorvilier;;50;LTH 5REUSOR;50 Ltg. Reuchenette-Sorvilier;50
-50kV;Moutier;Sorvilier;;50;LTH 5MOUSOR;50 Ltg. Moutier-Sorvilier;50
-50kV;Courrendlin;Moutier;;50;LTH 5COUMOU;50 Ltg. Courrendlin-Moutier;50
+50kV;Langendorf;Selzach;;50;LTH 5LADSEL;50 Ltg. Langendorf-Selzach;20.0
+50kV;Birchi;Selzach;;132;LTH 1BIRSEL;132 Ltg. Birchi-Selzach;75.0
+50kV;Birchi;Langendorf;;50;LTH 5BIRLAD;50 Ltg. Birchi-Langendorf;20.0
+50kV;Grenchen1;Selzach;;50;LTH 5GR1SEL;50 Ltg. Grenchen1-Selzach;20.0
+50kV;Grenchen2;Selzach;;50;LTH 5GR2SEL;50 Ltg. Grenchen2-Selzach;20.0
+50kV;Grenchen1;Pieterlen;;50;LTH 5GR1PIE;50 Ltg. Grenchen1-Pieterlen;20.0
+50kV;Grenchen1;Grenchen2;;50;LTH 5GR1GR2;50 Ltg. Grenchen1-Grenchen2;20.0
+50kV;Mett;Reuchenette;;50;LTH 5MTTREU;50 Ltg. Mett-Reuchenette;20.0
+50kV;Reuchenette;Sorvilier;;50;LTH 5REUSOR;50 Ltg. Reuchenette-Sorvilier;20.0
+50kV;Moutier;Sorvilier;;50;LTH 5MOUSOR;50 Ltg. Moutier-Sorvilier;20.0
+50kV;Courrendlin;Moutier;;50;LTH 5COUMOU;50 Ltg. Courrendlin-Moutier;20.0
 50kV;Courrendlin;Bassecourt;;;;not found;
-50kV;Bassecourt;Choindez;;50;LTH 5BACCHO;50 Ltg. Bassecourt-Choindez;50
-50kV;Reuchenette;St-Immer;;;;not found;
-50kV;St-Immer;Mt. Soleil;;;;not found;
-50kV;Mt. Soleil;Le Noirmont;;;;not found;
-50kV;Le Noirmont;Tramelan;;50;LTH 5NOITRA;50 Ltg. Le Noirmont-Tramelan;50
-50kV;Tramelan;Reconvilier;;;;not found;
-50kV;Bassecourt;Reconvilier;;50;LTH 5BACREC;50 Ltg. Bassecourt-Reconvilier;50
-50kV;Bassecourt;Porrentruy;;132;LTH 1BACPOR;132 Ltg. Bassecourt-Porrentruy;75
-50kV;Courtemaîche;Porrentruy;;50;LTH 5CTMPOR;50 Ltg. Courtemaîche-Porrentruy;50
-50kV;Bassecourt;Courtemaîche;1067,1824|912,1516;50;LTH 5BACCTM;50 Ltg. Bassecourt-Courtemaîche;50
-50kV;Courrendlin;Rondez;;50;LTH 5COURND;50 Ltg. Courrendlin-Rondez;50
-50kV;Courrendlin;Liesberg;;50;LTH 5COULIS;50 Ltg. Courrendlin-Liesberg;50
-50kV;Laufen;Liesberg;;50;LTH 5LAFLIS;50 Ltg. Laufen-Liesberg;50
-50kV;Breitenbach;Liesberg;;50;LTH 5BRBLIS;50 Ltg. Breitenbach-Liesberg (EBM);50
-50kV;Brislach;Laufen;;50;LTH 5BRILAF;50 Ltg. Brislach-Laufen (alt);50
-50kV;KEBAG;Luterbach;;50;LTH 5KEBLUB;50 Ltg. KEBAG-Luterbach;50
-50kV;Biberist;Birchi;;50;LTH 5BBIBIR;50 Ltg. Biberist-Birchi;50
-50kV;Biberist;Gerlafingen;;50;LTH 5BBIGER;50 Ltg. Biberist-Gerlafingen;50
+50kV;Bassecourt;Choindez;;50;LTH 5BACCHO;50 Ltg. Bassecourt-Choindez;20.0
+50kV;Reuchenette;St.-Imier;;;;not found;
+50kV;St.-Imier;Mont-Soleil;;;;not found;
+50kV;Le Noirmont;Mont-Soleil;;50;LTH 5NOISOL;50 Ltg. Le Noirmont-Mont-Soleil;20.0
+50kV;Le Noirmont;Tramelan;;50;LTH 5NOITRA;50 Ltg. Le Noirmont-Tramelan;20.0
+50kV;Le Noirmont;Tramelan;;50;LTH 5NOITRA;50 Ltg. Le Noirmont-Tramelan;20.0
+50kV;Reconvilier;Tramelan 1;;50;LTH 5RECTRA 1;50 Ltg. Reconvilier-Tramelan 1;20.0
+50kV;Reconvilier;Tramelan 2;;50;LTH 5RECTRA 2;50 Ltg. Reconvilier-Tramelan 2;20.0
+50kV;Bassecourt;Reconvilier;;50;LTH 5BACREC;50 Ltg. Bassecourt-Reconvilier;20.0
+50kV;Bassecourt;Porrentruy;;132;LTH 1BACPOR;132 Ltg. Bassecourt-Porrentruy;75.0
+50kV;Courtemaîche;Porrentruy;;50;LTH 5CTMPOR;50 Ltg. Courtemaîche-Porrentruy;20.0
+50kV;Bassecourt;Courtemaîche;1067,1824 | 912,1516;50;LTH 5BACCTM;50 Ltg. Bassecourt-Courtemaîche;20.0
+50kV;Courrendlin;Rondez;;50;LTH 5COURND;50 Ltg. Courrendlin-Rondez;20.0
+50kV;Courrendlin;Liesberg;;50;LTH 5COULIS;50 Ltg. Courrendlin-Liesberg;20.0
+50kV;Laufen;Liesberg;;50;LTH 5LAFLIS;50 Ltg. Laufen-Liesberg;20.0
+50kV;Breitenbach;Liesberg;;50;LTH 5BRBLIS;50 Ltg. Breitenbach-Liesberg (EBM);20.0
+50kV;Brislach;Laufen;;50;LTH 5BRILAF;50 Ltg. Brislach-Laufen (alt);20.0
+50kV;KEBAG;Luterbach;;50;LTH 5KEBLUB;50 Ltg. KEBAG-Luterbach;20.0
+50kV;Biberist;Birchi;;50;LTH 5BBIBIR;50 Ltg. Biberist-Birchi;20.0
+50kV;Biberist;Gerlafingen;;50;LTH 5BBIGER;50 Ltg. Biberist-Gerlafingen;20.0
 50kV;Gerlafingen;SG1;;;;not found;
 50kV;SG1;SG2;;;;not found;
 50kV;Birchi;SG1;;;;not found;
-50kV;Seewil;Utzenstorf;;50;LTH 5SEWUTZ;50 Ltg. Seewil-Utzenstorf;50
-50kV;Mühleberg;Seewil;;50;LTH 5MUESEW;50 Ltg. Mühleberg-Seewil;50
-50kV;Herzogenbuchsee;Niederönz;;50;LTH 5HEBNIO;50 Ltg. Herzogenbuchsee-Niederönz;50
-50kV;Herzogenbuchsee;Lotzwil;;50;LTH 5HEBLOZ;50 Ltg. Herzogenbuchsee-Lotzwil;50
+50kV;Seewil;Utzenstorf;;50;LTH 5SEWUTZ;50 Ltg. Seewil-Utzenstorf;20.0
+50kV;Mühleberg;Seewil;;50;LTH 5MUESEW;50 Ltg. Mühleberg-Seewil;20.0
+50kV;Herzogenbuchsee;Niederönz;;50;LTH 5HEBNIO;50 Ltg. Herzogenbuchsee-Niederönz;20.0
+50kV;Herzogenbuchsee;Lotzwil;;50;LTH 5HEBLOZ;50 Ltg. Herzogenbuchsee-Lotzwil;20.0
 50kV;Lotzwil;Lindenholz;;;;not found;
-50kV;Hard;Lindenholz;;50;LTH 5HARLIN;50 Ltg. Hard-Lindenholz;50
-50kV;Hard;Roggwil;;50;LTH 5HARROG;50 Ltg. Hard-Roggwil;50
-50kV;Roggwil;Wynau;;50;LTH 5ROGWYN;50 Ltg. Roggwil-Wynau;50
-50kV;Oberbuchsiten;Wynau;;50;LTH 5OBUWYN;50 Ltg. Oberbuchsiten-Wynau;50
-50kV;Niederbipp;Oberbuchsiten;;50;LTH 5NIBOBU;50 Ltg. Niederbipp-Oberbuchsiten;50
-50kV;Bannwil;Niederbipp;;50;LTH 5BANNIB;50 Ltg. Bannwil-Niederbipp (AVAG);50
-50kV;Bannwil;Niederönz;;50;LTH 5BANNIO;50 Ltg. Bannwil-Niederönz;50
-50kV;Huttwil;Lindenholz;;;;not found;
-50kV;Amsoldingen;Schwarzenburg;;50;LTH 5AMSSWB;50 Ltg. Amsoldingen-Schwarzenburg;50
-50kV;Amsoldingen;Spiezmoos;;50;LTH 5AMSSPM;50 Ltg. Amsoldingen-Spiezmoos;50
-50kV;Spiez;Spiezmoos;;50;LTH 5SPISPM;50 Ltg. Spiez-Spiezmoos;50
-50kV;Oberhofen;Spiez;;50;LTH 5OBHSPI;50 Ltg. Oberhofen-Spiez;50
-50kV;Oberhofen;Steffisburg;;50;LTH 5OBHSTE;50 Ltg. Oberhofen-Steffisburg;50
-50kV;Erlenbach;Zweisimmen;;50;LTH 5ERLZWE;50 Ltg. Erlenbach-Zweisimmen;50
-50kV;Saanen;Zweisimmen;;50;LTH 5SAAZWE;50 Ltg. Saanen-Zweisimmen;50
+50kV;Hard;Lindenholz;;50;LTH 5HARLIN;50 Ltg. Hard-Lindenholz;20.0
+50kV;Hard;Roggwil;;50;LTH 5HARROG;50 Ltg. Hard-Roggwil;20.0
+50kV;Roggwil;Wynau;;50;LTH 5ROGWYN;50 Ltg. Roggwil-Wynau;20.0
+50kV;Oberbuchsiten;Wynau;;50;LTH 5OBUWYN;50 Ltg. Oberbuchsiten-Wynau;20.0
+50kV;Niederbipp;Oberbuchsiten;;50;LTH 5NIBOBU;50 Ltg. Niederbipp-Oberbuchsiten;20.0
+50kV;Bannwil;Niederbipp;;50;LTH 5BANNIB;50 Ltg. Bannwil-Niederbipp (AVAG);20.0
+50kV;Bannwil;Niederönz;;50;LTH 5BANNIO;50 Ltg. Bannwil-Niederönz;20.0
+50kV;Huttwil;Lindenholz 1;;50;LTH 5HUTLIN 1;50 Ltg. Huttwil-Lindenholz 1;20.0
+50kV;Huttwil;Lindenholz 2;;50;LTH 5HUTLIN 2;50 Ltg. Huttwil-Lindenholz 2;20.0
+50kV;Amsoldingen;Schwarzenburg;;50;LTH 5AMSSWB;50 Ltg. Amsoldingen-Schwarzenburg;20.0
+50kV;Amsoldingen;Spiezmoos;;50;LTH 5AMSSPM;50 Ltg. Amsoldingen-Spiezmoos;20.0
+50kV;Spiez;Spiezmoos;;50;LTH 5SPISPM;50 Ltg. Spiez-Spiezmoos;20.0
+50kV;Oberhofen;Spiez;;50;LTH 5OBHSPI;50 Ltg. Oberhofen-Spiez;20.0
+50kV;Oberhofen;Steffisburg;;50;LTH 5OBHSTE;50 Ltg. Oberhofen-Steffisburg;20.0
+50kV;Erlenbach;Zweisimmen;;50;LTH 5ERLZWE;50 Ltg. Erlenbach-Zweisimmen;20.0
+50kV;Saanen;Zweisimmen;;50;LTH 5SAAZWE;50 Ltg. Saanen-Zweisimmen;20.0
 50kV;Gstaad;Saanen;;;;not found;
-50kV;Lenk;Zweisimmen;;50;LTH 5LNKZWE;50 Ltg. Lenk-Zweisimmen;50
-50kV;Adelboden;Lenk;;50;LTH 5ADELNK;50 Ltg. Adelboden-Lenk;50
-50kV;Adelboden;Frutigen;;50;LTH 5ADEFRU;50 Ltg. Adelboden-Frutigen;50
-50kV;Frutigen;Kandergrund;;50;LTH 5FRUKAN;50 Ltg. Frutigen-Kandergrund;50
+50kV;Lenk;Zweisimmen;;50;LTH 5LNKZWE;50 Ltg. Lenk-Zweisimmen;20.0
+50kV;Adelboden;Lenk;;50;LTH 5ADELNK;50 Ltg. Adelboden-Lenk;20.0
+50kV;Adelboden;Frutigen;;50;LTH 5ADEFRU;50 Ltg. Adelboden-Frutigen;20.0
+50kV;Frutigen;Kandergrund;;50;LTH 5FRUKAN;50 Ltg. Frutigen-Kandergrund;20.0
 50kV;Wimmis;Frutigen;;;;not found;
-50kV;Buchholz;Wimmis;;50;LTH 5BHOWIM;50 Ltg. Buchholz-Wimmis;50
+50kV;Buchholz;Wimmis;;50;LTH 5BHOWIM;50 Ltg. Buchholz-Wimmis;20.0
 50kV;Thun-Aare;Buchholz;;;;not found;
 50kV;Thun-Aare;Steffisburg;;;;not found;
-50kV;Leissigen;Wimmis;;50;LTH 5LSGWIM;50 Ltg. Leissigen-Wimmis;50
-50kV;Leissigen;Wilderswil;;50;LTH 5LSGWIL;50 Ltg. Leissigen-Wilderswil;50
-50kV;Lauterbrunnen;Wilderswil;;50;LTH 5LBRWIL;50 Ltg. Lauterbrunnen-Wilderswil;50
-50kV;Grindelwald;Wilderswil;;50;LTH 5GWAWIL;50 Ltg. Grindelwald-Wilderswil;50
-50kV;Aaregg;Brienz;;50;LTH 5AREBRZ;50 Ltg. Aaregg-Brienz;50
-50kV;Brienz;Meiringen;;50;LTH 5BRZMEI;50 Ltg. Brienz-Meiringen;50
-50kV;Innertkirchen;Meiringen;;50;LTH 5INNMEI;50 Ltg. Innertkirchen-Meiringen;50
-50kV;Innergsteig;Saanen;;50;LTH 5IGSSAA;50 Ltg. Innergsteig-Saanen;50
-50kV;Gasel;Schwarzenburg;;50;LTH 5GASSWB;50 Ltg. Gasel-Schwarzenburg;50
-50kV;Mett;Reuchenette;;50;LTH 5MTTREU;50 Ltg. Mett-Reuchenette;50
-50kV;Lamboing;Reuchenette;1377, 3068;50;LTH 5LAMREU;50 Ltg. Lamboing-Reuchenette;50
-50kV;Erlach;Lamboing;;50;LTH 5ELALAM;50 Ltg. Erlach-Lamboing;50
-50kV;Erlach;Hagneck;;50;LTH 5ELAHAG;50 Ltg. Erlach-Hagneck;50
-50kV;Brügg;Hagneck;;50;LTH 5BRUHAG;50 Ltg. Brügg-Hagneck;50
-50kV;Brüel;Ländte;;50;LTH 5BRLLAE;50 Ltg. Brüel-Ländte (ESB);50
-50kV;Brügg;Ländte;;50;LTH 5BRULAE;50 Ltg. Brügg-Ländte (ESB);50
-50kV;Brügg;Madretsch;;50;LTH 5BRUMAD;50 Ltg. Brügg-Madretsch (ESB);50
-50kV;Madretsch;Mett;;50;LTH 5MADMTT;50 Ltg. Madretsch-Mett;50
-50kV;Brüel;Mett;;50;LTH 5BRLMTT;50 Ltg. Brüel-Mett (ESB);50
-50kV;Aarberg;Kappelen;;50;LTH 5AARKAP;50 Ltg. Aarberg-Kappelen;50
+50kV;Leissigen;Wimmis;;50;LTH 5LSGWIM;50 Ltg. Leissigen-Wimmis;20.0
+50kV;Leissigen;Wilderswil;;50;LTH 5LSGWIL;50 Ltg. Leissigen-Wilderswil;20.0
+50kV;Lauterbrunnen;Wilderswil;;50;LTH 5LBRWIL;50 Ltg. Lauterbrunnen-Wilderswil;20.0
+50kV;Grindelwald;Wilderswil;;50;LTH 5GWAWIL;50 Ltg. Grindelwald-Wilderswil;20.0
+50kV;Aaregg;Brienz;;50;LTH 5AREBRZ;50 Ltg. Aaregg-Brienz;20.0
+50kV;Brienz;Meiringen;;50;LTH 5BRZMEI;50 Ltg. Brienz-Meiringen;20.0
+50kV;Innertkirchen;Meiringen;;50;LTH 5INNMEI;50 Ltg. Innertkirchen-Meiringen;20.0
+50kV;Innergsteig;Saanen;;50;LTH 5IGSSAA;50 Ltg. Innergsteig-Saanen;20.0
+50kV;Gasel;Schwarzenburg;;50;LTH 5GASSWB;50 Ltg. Gasel-Schwarzenburg;20.0
+50kV;Mett;Reuchenette;;50;LTH 5MTTREU;50 Ltg. Mett-Reuchenette;20.0
+50kV;Lamboing;Reuchenette;1377, 3068;50;LTH 5LAMREU;50 Ltg. Lamboing-Reuchenette;20.0
+50kV;Erlach;Lamboing;;50;LTH 5ELALAM;50 Ltg. Erlach-Lamboing;20.0
+50kV;Erlach;Hagneck;;50;LTH 5ELAHAG;50 Ltg. Erlach-Hagneck;20.0
+50kV;Brügg;Hagneck;;50;LTH 5BRUHAG;50 Ltg. Brügg-Hagneck;20.0
+50kV;Brüel;Ländte;;50;LTH 5BRLLAE;50 Ltg. Brüel-Ländte (ESB);20.0
+50kV;Brügg;Ländte;;50;LTH 5BRULAE;50 Ltg. Brügg-Ländte (ESB);20.0
+50kV;Brügg;Madretsch;;50;LTH 5BRUMAD;50 Ltg. Brügg-Madretsch (ESB);20.0
+50kV;Madretsch;Mett;;50;LTH 5MADMTT;50 Ltg. Madretsch-Mett;20.0
+50kV;Brüel;Mett;;50;LTH 5BRLMTT;50 Ltg. Brüel-Mett (ESB);20.0
+50kV;Aarberg;Kappelen;;50;LTH 5AARKAP;50 Ltg. Aarberg-Kappelen;20.0
 50kV;Aarberg;ZFA;;;;not found;
-50kV;Aarberg;Kallnach;;50;LTH 5AARKAL;50 Ltg. Aarberg-Kallnach;50
-50kV;Kallnach;Niederried;;50;LTH 5KALNIE;50 Ltg. Kallnach-Niederried;50
-50kV;Mühleberg;Niederried;;50;LTH 5MUENIE;50 Ltg. Mühleberg-Niederried;50
+50kV;Aarberg;Kallnach;;50;LTH 5AARKAL;50 Ltg. Aarberg-Kallnach;20.0
+50kV;Kallnach;Niederried;;50;LTH 5KALNIE;50 Ltg. Kallnach-Niederried;20.0
+50kV;Mühleberg;Niederried;;50;LTH 5MUENIE;50 Ltg. Mühleberg-Niederried;20.0
