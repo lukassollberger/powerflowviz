@@ -50,6 +50,7 @@ lineSelect = {
   power: 0,
   lineName: "Default Line",
   lineAbbrev: "LTH 1BACBRI",
+  linecolor: [100, 100, 100],
   waypoints: [],
   linelimit: 75
 };
@@ -155,6 +156,13 @@ function load_substations() {
         });
 }
 
+function getLineColor(type) {
+  if (type === "380/220kV") return color380220kV;
+  if (type === "132kV")     return color132kV;
+  if (type === "50kV")      return color50kV;
+  return [100, 100, 100];
+}
+
 // Load lines data
 function load_lines(timestamp) {
     d3.dsv(";", "line_list_out.csv").then(
@@ -175,7 +183,8 @@ function load_lines(timestamp) {
             sum += power;
             count++;
           }
-
+          let linecolor = getLineColor(row.Type);
+          console.log(linecolor);
           let waypoints = [];
           if (row.Waypoints) {
             let raw = row.Waypoints.includes("|") ? row.Waypoints.split("|") : [row.Waypoints];
@@ -202,6 +211,7 @@ function load_lines(timestamp) {
                 power,
                 lineName,
                 lineAbbrev,
+                linecolor,
                 waypoints,
                 linelimit
               });
@@ -545,14 +555,21 @@ function circularBarPlot(markerX) {
   }
 
   // draw marker line
+  push();
   stroke(BKW_Light_Green);
-  strokeWeight(5);
+  strokeWeight(4);
   translate(cx, cy);   // translate to center first, then rotate so rotation is around (cx, cy)
   let markerAngle = map(markerX, timelineRect.x, timelineRect.x + timelineRect.w, -HALF_PI, -HALF_PI + TWO_PI );
   rotate(markerAngle);
-  line(0, 0, radius, 0);
-
+  line(100, 0, radius+100, 0);
   pop();
+
+  // add center label
+  textAlign(CENTER, CENTER);
+  textSize(16);
+  text(lineSelect.lineName, cx, cy);
+  // text(lineSelect.lineAbbrev, cx, cy+20);
+
 }
 
 function resizeToWindow() {
@@ -636,6 +653,19 @@ function setup() {
 
 }
 
+function mark_selected_line(lineSelect) {
+    // console.log("Marking selected line:", lineSelect);
+    strokeWeight(5);
+    stroke(lineSelect.linecolor);
+    noFill();
+    beginShape();
+    vertex(lineSelect.from.x, lineSelect.from.y);
+    lineSelect.waypoints?.forEach(wp => vertex(wp.x, wp.y));
+    vertex(lineSelect.to.x, lineSelect.to.y);
+    endShape();
+
+}
+
 
 // ---------------- Draw function --------------------
 function draw() {
@@ -657,21 +687,25 @@ function draw() {
         if (!layer.visible) continue;
       
         // Draw lines
-        strokeWeight(2);
+        strokeWeight(1);
         layer.lines.forEach(l => {
               // 🟢 Set stroke color based on voltage type
+              // if (l.power === null || isNaN(l.power)) {
+              //   stroke(150); // Gray for missing data
+              // } else if (l.type === "380/220kV") {
+              //   stroke(color380220kV);       // Green
+              // } else if (l.type === "132kV") {
+              //   stroke(color132kV);     // Orange
+              // } else if (l.type === "50kV") {
+              //   stroke(color50kV);     // Blue
+              // } else {
+              //   stroke(100);             // Fallback gray
+              // }
               if (l.power === null || isNaN(l.power)) {
                 stroke(150); // Gray for missing data
-              } else if (l.type === "380/220kV") {
-                stroke(color380220kV);       // Green
-              } else if (l.type === "132kV") {
-                stroke(color132kV);     // Orange
-              } else if (l.type === "50kV") {
-                stroke(color50kV);     // Blue
               } else {
-                stroke(100);             // Fallback gray
+                stroke(l.linecolor);
               }
-
               noFill();
               beginShape();
               vertex(l.from.x, l.from.y);
@@ -679,6 +713,9 @@ function draw() {
               vertex(l.to.x, l.to.y);
               endShape();
          });
+
+        // Mark selected line
+        mark_selected_line(lineSelect);
       
         // Particle system 
         generate_particles(voltage, layer);
@@ -799,7 +836,10 @@ function draw() {
     if (magnifier) {
       drawMagnifier(mouseX/scaleFactor, mouseY/scaleFactor, 100, 2);
     }
-    pop();
+
+    cursor(isMouseHoveringLine() ? HAND : ARROW);
+
+    // pop();
 
 }
 
@@ -856,14 +896,49 @@ function drawTitle() {
     "aus mehreren Tausend Kilometer Leitung, verteilt auf\n" +
     "zwei Spannungsebenen - 50 kV und 132 kV (Kilovolt)." +
     "Hinzu kommt das überlagerte Höchstspannungsnetz der\n" +
-    "Swissgrid. Diese vielen Hochspannungsleitungen formen" +
+    "Swissgrid. Diese vielen Hochspannungsleitungen formen " +
     "ein komplexes vermaschtes Netz und stellen den über-\n" +
-    "regionalen Transport der elektrischen Energie sicher." +
+    "regionalen Transport der elektrischen Energie sicher. " +
     "Zusammen bilden sie das Rückgrat einer stabilen \n" +
     "Energieversorgung. Dieses Visualisierung macht die Energieflüsse in diesem komplexen Netz sichtbar.",
     canvasWidth - 10,
     70
   );
+}
+
+function isMouseHoveringLine() {
+  const minDist = 10; // px in DESIGN space
+  const mx = mouseX / scaleFactor;
+  const my = mouseY / scaleFactor;
+
+  for (let voltage in voltageLayers) {
+    const layer = voltageLayers[voltage];
+    if (!layer.visible) continue;
+
+    for (const l of layer.lines) {
+      const pts = [l.from, ...(l.waypoints || []), l.to];
+
+      for (let i = 0; i < pts.length - 1; i++) {
+        const x0 = pts[i].x,     y0 = pts[i].y;
+        const x1 = pts[i+1].x,   y1 = pts[i+1].y;
+
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const denom = dx*dx + dy*dy;
+        if (denom === 0) continue;
+
+        let t = ((mx - x0) * dx + (my - y0) * dy) / denom;
+        t = constrain(t, 0, 1);
+
+        const px = x0 + t * dx;
+        const py = y0 + t * dy;
+
+        if (dist(mx, my, px, py) < minDist) return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 
@@ -912,6 +987,8 @@ function mousePressed() {
   if (found) {
     print('Selected line:', colName);
   }
+
+
 }
 
   
