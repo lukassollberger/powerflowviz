@@ -183,8 +183,8 @@ function load_lines(timestamp) {
             sum += power;
             count++;
           }
+          console.log(`Line ${lineAbbrev} at ${timestamp}: Power = ${power} MW`);
           let linecolor = getLineColor(row.Type);
-          console.log(linecolor);
           let waypoints = [];
           if (row.Waypoints) {
             let raw = row.Waypoints.includes("|") ? row.Waypoints.split("|") : [row.Waypoints];
@@ -285,41 +285,37 @@ function generate_particles(voltage, layer) {
       voltageLayers[voltage].FIRSTRUN = false;
     }
         
-  // Generate particles based on line power. Spawn normally at line start. 
+  // Generate particles based on line power.
+  // Each frame, a line has a certain chance to emit a particle.
+  // This chance increases with the absolute power on the line.
   } else {
 
-    // FIX: PARTICELDENSITIY DEPENDING ON POWER NEEDS TO BE ADJUSTET VIA FRAMECOOUNT
-    // LIKE frameCount % L.POWER === 0
-    // 
-      if (frameCount % 20 === 0) {
-          layer.lines.forEach(l => {
-            for (let i = 0; i < l.power / 20; i++) {  // <-- THIS IS FALSE. FIX. THIS SPAWNS MULTIPLE PARTICELES DEPENDING ON POWER OVER EACHOTHER, IF ALL HAVE SAME SPEED THE TOTALLY OVERLAP. 
+
+      layer.lines.forEach(l => {
+        const p = abs(l.power || 0);  // Abolute power. Fallback to 0 in case of NaN
+        const pMax = 200;
+        const maxProb = 0.3; // Max probability to spawn a particle on a line per frame, adjust as needed
+        const prob = map(constrain(p, 0, pMax), 0, pMax, 0, maxProb); // probability to spawn a particle. Higher power means higher probability, capped at pMax. Adjust the 0.01 and 0.5 to control overall particle density.
+
+        if (random() < prob)  {  
               const path = [l.from, ...(l.waypoints || []), l.to];
               layer.particles.push({
                 x: path[0].x,
                 y: path[0].y,
-                // speed: random(0.1, 0.4),
                 speed: 1,
                 path: path,
                 currentSegment: 0,
-                alpha: map(l.power, 0, maxPerRow[5], 50, 255),   //  <-- FIND EXACT MAX POWER VALUE FROM RIGHT ROW
               });
               }
-          });
-          
-      }
+      });
     }
 
     // Update and draw particles
   for (let i = layer.particles.length - 1; i >= 0; i--) {
         let p = layer.particles[i];
-
-        // Get current segment
-        let end   = p.path[p.currentSegment + 1];
-        
+        let end   = p.path[p.currentSegment + 1];         // Get current segment
         if (!end) {
-          // Reached end of path
-          layer.particles.splice(i, 1);
+          layer.particles.splice(i, 1);           // Reached end of path
           continue;
         }
         
@@ -331,12 +327,8 @@ function generate_particles(voltage, layer) {
         if (dist(p.x, p.y, end.x, end.y) < 1) {
           p.currentSegment++;
         }
-
-        // drawingContext.shadowBlur = 15;
-        // drawingContext.shadowColor = color(0, 255, 0, 255);
-
         // draw particle
-        fill(255, 255, 0, 60);
+        fill(255, 255, 0, 150);
         noStroke();
         circle(p.x, p.y, 5);
 
@@ -356,6 +348,20 @@ function timeline_slider() {
     noFill();
     noStroke();
     rect(timelineRect.x, timelineRect.y, timelineRect.w, timelineRect.h,2);
+
+    // Labels
+    fill(0);
+    noStroke();
+    textSize(14);
+    textAlign(LEFT, BOTTOM);
+    text("Bewege den Schieberegler, um einen Zeitpunkt auszuwählen", timelineRect.x, timelineRect.y + timelineRect.h + 25);
+
+    textAlign(LEFT, TOP);
+    text("Maximale Leistung im Netz", timelineRect.x + timelineRect.w + 10, timelineRect.y);
+
+    textAlign(LEFT, BOTTOM);
+    text("Minimale Leistung im Netz", timelineRect.x + timelineRect.w + 10, timelineRect.y + timelineRect.h);
+
 
     // Draw ticks and marker
     let tsIdx = 0;
@@ -587,6 +593,8 @@ function windowResized() {
 // p5.js: Load timeseries in preload, rest in setup. Otherwise timeseries data is not fully loaded when needed, due to the way p5.js handles the default preload function.
 function preload() {
   BKWmapImg = loadImage("bkw_map.png");  
+  googlefont = loadFont("fonts/RobotoCondensed-VariableFont_wght.ttf");
+
   load_power_data();  // load power timeseries data in preload
   load_substations();     // load substation data in preload
 }
@@ -608,6 +616,7 @@ function setup() {
     // canvasWidth = windowWidth;
     // createCanvas(canvasWidth, canvasHeight);
     createCanvas(10, 10);
+    textFont(googlefont);
 
     resizeToWindow();
     // Simple: min, max, average per row
@@ -679,6 +688,7 @@ function draw() {
     // pop();
     if (substations.length === 0) {
         text("Loading data...", width / 2, height / 2);
+        pop();
         return;
     }
  
@@ -837,9 +847,9 @@ function draw() {
       drawMagnifier(mouseX/scaleFactor, mouseY/scaleFactor, 100, 2);
     }
 
-    cursor(isMouseHoveringLine() ? HAND : ARROW);
+    cursor(isMouseHovering() ? HAND : ARROW);
 
-    // pop();
+    pop();
 
 }
 
@@ -906,10 +916,20 @@ function drawTitle() {
   );
 }
 
-function isMouseHoveringLine() {
+function isMouseHovering() {
   const minDist = 10; // px in DESIGN space
   const mx = mouseX / scaleFactor;
   const my = mouseY / scaleFactor;
+
+  // ✅ ALSO: hovering over timeline rectangle
+  if (
+    mx >= timelineRect.x &&
+    mx <= timelineRect.x + timelineRect.w &&
+    my >= timelineRect.y &&
+    my <= timelineRect.y + timelineRect.h
+  ) {
+    return true;
+  }
 
   for (let voltage in voltageLayers) {
     const layer = voltageLayers[voltage];
@@ -937,6 +957,8 @@ function isMouseHoveringLine() {
       }
     }
   }
+
+  
 
   return false;
 }
@@ -988,6 +1010,30 @@ function mousePressed() {
     print('Selected line:', colName);
   }
 
+ // Timeline interaction
+  if (
+    mouseY/scaleFactor > timelineRect.y && mouseY/scaleFactor < timelineRect.y + timelineRect.h &&
+    mouseX/scaleFactor > timelineRect.x && mouseX/scaleFactor < timelineRect.x + timelineRect.w
+  ) {
+    let nTimestamps = P_table.getRowCount();
+    let idx = Math.round(map(mouseX/scaleFactor, timelineRect.x, timelineRect.x + timelineRect.w, 0, nTimestamps - 1));
+    idx = constrain(idx, 0, nTimestamps - 1);
+    let newTimestamp = P_table.getString(idx, 0);
+    if (newTimestamp !== timestamp) {
+      timestamp = newTimestamp;
+      // Clear lines and particles for all voltage layers
+      for (let voltage in voltageLayers) {
+        voltageLayers[voltage].lines = [];
+        voltageLayers[voltage].particles = [];
+        voltageLayers[voltage].FIRSTRUN = true;
+      }
+      setup();
+    }
+    timelineActive = true;
+    return;
+  }
+  
+
 
 }
 
@@ -1016,14 +1062,7 @@ function mouseDragged() {
     timelineActive = true;
     return;
   }
-  
 
-
-
-
-
-  
-  
 }
 
 function keyTyped() {
