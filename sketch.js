@@ -10,13 +10,13 @@ let canvasWidth = DESIGN_W;
 let canvasHeight = DESIGN_H;
 // Map
 let mapX = 50;
-let mapY = 100;
+let mapY = 120;
 // let aspect_ratio = 1  
 // let mapWidth = 700;
 // let mapHeight = 700;
 // let gridWidth = 700;
 // let gridHeight = 800;
-let mapWidth = canvasWidth*0.45;
+let mapWidth = canvasWidth*0.44;
 let mapHeight = mapWidth;
 let gridWidth = mapWidth;
 let gridHeight = gridWidth*1.1;
@@ -26,8 +26,8 @@ let gridHeight = gridWidth*1.1;
 let scaleFactor = 1;
 
 // Legend
-let legendX = canvasWidth/2 - 300;
-let legendY = 130;
+let legendX = canvasWidth/2 - 250;
+let legendY = 180;
 
 // grid visualization
 let arrows = [];
@@ -355,13 +355,10 @@ function timeline_slider() {
     textSize(14);
     textAlign(LEFT, BOTTOM);
     text("Bewege den Schieberegler, um einen Zeitpunkt auszuwählen", timelineRect.x, timelineRect.y + timelineRect.h + 25);
-
     textAlign(LEFT, TOP);
-    text("Maximale Leistung im Netz", timelineRect.x + timelineRect.w + 10, timelineRect.y);
-
+    text("Maximale Leistung im Netz", timelineRect.x + timelineRect.w + 10, timelineRect.y-5);
     textAlign(LEFT, BOTTOM);
-    text("Minimale Leistung im Netz", timelineRect.x + timelineRect.w + 10, timelineRect.y + timelineRect.h);
-
+    text("Minimale Leistung im Netz", timelineRect.x + timelineRect.w + 10, timelineRect.y + timelineRect.h+5);
 
     // Draw ticks and marker
     let tsIdx = 0;
@@ -371,39 +368,43 @@ function timeline_slider() {
         break;
       }
     }
-    // Marker for current timestamp
     let markerX = map(tsIdx, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
-    stroke(BKW_Light_Green);
-    strokeWeight(5);
+    stroke(BKW_Black);
+    strokeWeight(6);
     line(markerX, timelineRect.y-4, markerX, timelineRect.y + timelineRect.h+4);
     noStroke();
-    fill(BKW_Light_Green);
-    textAlign(CENTER, TOP);
-    textSize(14);
-    text(timestamp, markerX, timelineRect.y + timelineRect.h + 8);
+    // fill(BKW_Black);
+    // textAlign(CENTER, TOP);
+    // textSize(14);
+    // text(timestamp, markerX, timelineRect.y-20);
 
     // draw ticks every 24 steps (1 per day for 15-min data)
-    stroke(BKW_Light_Green);
+    // Add weekday names and ticks inside the circle 
+    let weekdayNames = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+    stroke(BKW_Black_50);
     strokeWeight(2);
-    for (let i = 0; i < nTimestamps; i += 96) {
+    for (let i = 0, day = 0; i < nTimestamps; i += 96, day++) {
       let tickX = map(i, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
-      line(tickX, timelineRect.y, tickX, timelineRect.y + timelineRect.h);
+      line(tickX, timelineRect.y-5, tickX, timelineRect.y + timelineRect.h+5);
+      // draw weekday above tick
+      noStroke();
+      fill(0);
+      textAlign(CENTER, CENTER);
+      textSize(12);
+      text(weekdayNames[day % 7], tickX+60, timelineRect.y-10);
+
+      stroke(BKW_Black_50); // restore stroke for next tick
     }
     noStroke();
 
-    // Draw min, average, and max lines into time slider
+    // Draw min and max lines into time slider
     noFill();
     strokeWeight(2);
-    // Average line (orange)
-    stroke(BKW_Black);
-    beginShape();
-    for (let r = 0; r < nTimestamps; r++) {
-      let x = map(r, 0, nTimestamps - 1, timelineRect.x, timelineRect.x + timelineRect.w);
-      let y = map(averagePerRow[r], globalminVal, globalmaxVal, timelineRect.y + timelineRect.h, timelineRect.y);
-      vertex(x, y);
-    }
-    endShape();
-    // Min line (blue)
+    // Zero line
+    stroke(BKW_Black_50)
+    line(timelineRect.x,timelineRect.y+timelineRect.h/2,timelineRect.x + timelineRect.w,timelineRect.y+timelineRect.h/2);
+
+    // Min line 
     stroke(BKW_Black);
     beginShape();
     for (let r = 0; r < nTimestamps; r++) {
@@ -412,7 +413,7 @@ function timeline_slider() {
       vertex(x, y);
     }
     endShape();
-    // Max line (red)
+    // Max line 
     stroke(BKW_Black);
     beginShape();
     for (let r = 0; r < nTimestamps; r++) {
@@ -619,6 +620,7 @@ function setup() {
     textFont(googlefont);
 
     resizeToWindow();
+    
     // Simple: min, max, average per row
     minPerRow = [];
     maxPerRow = [];
@@ -843,13 +845,15 @@ function draw() {
     textAlign(RIGHT, BOTTOM);
     text(`Average Power: ${average_power !== null ? average_power.toFixed(2) : "N/A"}`, canvasWidth - 20, canvasHeight - 10);
 
-    if (magnifier) {
-      drawMagnifier(mouseX/scaleFactor, mouseY/scaleFactor, 100, 2);
-    }
+   
 
     cursor(isMouseHovering() ? HAND : ARROW);
 
     pop();
+
+    if (magnifier) {
+      drawMagnifier(mouseX, mouseY, 100, 2);
+    }
 
 }
 
@@ -865,27 +869,97 @@ function keyPressed() {
     });
   }
   
-  function drawLegend() {
-    const items = [
-      { key: "Numpad 1", label: "380/220kV", color: color(color380220kV), visible: voltageLayers["380/220kV"].visible },
-      { key: "Numpad 2", label: "132kV",     color: color(color132kV), visible: voltageLayers["132kV"].visible },
-      { key: "Numpad 3", label: "50kV",      color: color(color50kV), visible: voltageLayers["50kV"].visible }
-    ];
-  
+function drawLegend() {
+
+  const items = [
+    { key: "1", label: "380 / 220 kV", color: color(color380220kV), layer: "380/220kV" },
+    { key: "2", label: "132 kV",       color: color(color132kV),     layer: "132kV" },
+    { key: "3", label: "50 kV",        color: color(color50kV),      layer: "50kV" }
+  ];
+
+  // ----- Title -----
+  fill(0);
+  noStroke();
+  textAlign(LEFT, TOP);
+  textSize(16);
+  textStyle(BOLD);
+  text("Spannungsebenen mit den Zifferntasten \n ein- und ausblenden", legendX, legendY - 45);
+  textStyle(NORMAL);
+
+  // ----- Voltage Toggle Items -----
+  items.forEach((item, index) => {
+
+    let y = legendY + index * 30;
+    let isActive = voltageLayers[item.layer].visible;
+
+    // Color square
+    fill(isActive ? item.color : BKW_Black_25);
+    noStroke();
+    rect(legendX + 28, y, 18, 18, 4);
+
+    // Key box (highlight when active)
+    fill(isActive ? color(BKW_Black_25) : BKW_White);
+    rect(legendX, y, 24, 18, 4);
+
+    // Key text
+    noStroke();
+    fill(0);
+    textAlign(CENTER, CENTER);
+    textSize(12);
+    textStyle(BOLD);
+    text(item.key, legendX + 12, y + 9);
+    textStyle(NORMAL);
+
+    // Description
     textAlign(LEFT, CENTER);
-    textSize(18);
-    text("Spannungsebenen Ein- und Ausblender:",legendX,legendY-20);
-    items.forEach((item, index) => {
-      fill(item.visible ? item.color : 150);
-      rect(legendX, legendY + index * 25, 15, 15, 3);
-  
-      fill(0);
-      text(`[${item.key}] ${item.label}`, legendX + 25, legendY + index * 25 + 7);
-    });
+    textSize(14);
+    fill(0);
+    text(item.label, legendX + 50, y + 9);
+  });
 
-    text("Mit Taste M Lupe aktivieren/deaktivieren:",legendX,legendY + items.length * 25 + 20);
+  // ----- Extra Controls -----
+  let yBase = legendY + items.length * 30;
 
-  }
+  textAlign(LEFT, TOP);
+  textSize(16);
+  fill(0);
+  textStyle(BOLD);
+  text("Weitere Funktionen", legendX, yBase);
+  textStyle(NORMAL);
+
+  // ----- M Key (Magnifier toggle) -----
+  fill(magnifier ? color(BKW_Black_25) : BKW_White);
+  rect(legendX, yBase + 20, 24, 18, 4);
+
+  noStroke();
+  fill(0);
+  textAlign(CENTER, CENTER);
+  textSize(12);
+  textStyle(BOLD);
+  text("M", legendX + 12, yBase + 29);
+  textStyle(NORMAL);
+
+  textAlign(LEFT, CENTER);
+  textSize(14);
+  text("Lupe ein- / ausblenden", legendX + 30, yBase + 29);
+
+  // ----- S Key (no toggle state) -----
+  fill(245);
+  rect(legendX, yBase + 50, 24, 18, 4);
+
+  noStroke();
+  fill(0);
+  textAlign(CENTER, CENTER);
+  textSize(12);
+  textStyle(BOLD);
+  text("S", legendX + 12, yBase + 59);
+  textStyle(NORMAL);
+
+  textAlign(LEFT, CENTER);
+  textSize(14);
+  text("Screenshot speichern", legendX + 30, yBase + 59);
+}
+
 
 function drawTitle() {
 
@@ -1080,37 +1154,31 @@ function keyTyped() {
   }
 }
 
-function drawMagnifier(cxMouse, cyMouse, radius = 80, zoom = 2) {
-  const ctx = drawingContext;              // underlying CanvasRenderingContext2D
-  const canvasEl = ctx.canvas;
-  const dpr = window.devicePixelRatio || 1;
+function drawMagnifier(x, y, r = 80, zoom = 2) {
+  push();
 
-  // clamp requested values so source rectangle stays inside canvas
-  const sw = (radius * 2) / zoom;
+  // area we "grab" from the canvas
+  const sw = (r * 2) / zoom;
   const sh = sw;
-  let sx = (cxMouse - sw / 2);
-  let sy = (cyMouse - sh / 2);
 
-  // clamp source rectangle
-  sx = Math.max(0, Math.min(sx, canvasEl.width / dpr - sw));
-  sy = Math.max(0, Math.min(sy, canvasEl.height / dpr - sh));
+  // take snapshot from current canvas
+  let img = get(x - sw/2, y - sh/2, sw, sh); 
 
-  // save, clip to circle, draw scaled portion into the circle, restore
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cxMouse, cyMouse, radius, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.clip();
+  // clip to circle
+  drawingContext.save();
+  drawingContext.beginPath();
+  drawingContext.arc(x, y, r, 0, TWO_PI);
+  drawingContext.clip();
 
-  // drawImage(source, sx, sy, sw, sh, dx, dy, dw, dh)
-  ctx.drawImage(canvasEl, sx * dpr, sy * dpr, sw * dpr, sh * dpr,
-                cxMouse - radius, cyMouse - radius, radius * 2, radius * 2);
+  // draw zoomed image
+  image(img, x - r, y - r, r * 2, r * 2);
+  drawingContext.restore();
 
-  ctx.restore();
-
-  // border + crosshair (optional)
+  // border
   noFill();
   stroke(255);
-  strokeWeight(4);
-  ellipse(cxMouse, cyMouse, radius * 2, radius * 2);
+  strokeWeight(3);
+  circle(x, y, r * 2);
+
+  pop();
 }
