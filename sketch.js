@@ -48,21 +48,21 @@ lineSelect = {
   from: { type: "132kV", name: "", x: 0, y: 0, power: 0 },
   to: { type: "132kV", name: "", x: 10, y: 0, power: 0 },
   power: 0,
-  lineName: "Default Line",
-  lineAbbrev: "LTH 1BACBRI",
+  lineName: "Select a line",
+  lineAbbrev: "0000",
   linecolor: [100, 100, 100],
   waypoints: [],
   linelimit: 75
 };
 let animatedBarLens = [];
 let targetBarLens = [];
-let lastColName = colName;
+let lastColName = lineSelect.lineAbbrev; // To track when the selected line changes for circular plot animation
 let minX, maxX, minY, maxY;
 let average_power = null;
 
 // circular plot center
-let cx = canvasWidth * 0.7;
-let cy = canvasHeight * 0.55;
+let cx = canvasWidth * 0.75;
+let cy = canvasHeight * 0.58;
 
 // let FIRSTRUN = true;
 
@@ -436,11 +436,15 @@ function circularBarPlot(markerX) {
   let PixelperMW = 0; 
   let MWSteps = 0; // How many MW per circle
   let radius_circularPlot = 250;
+  let colExists = P_table.columns.includes(lineSelect.lineAbbrev);
 
   // Find min/max for scaling
   let lineminVal = Infinity, linemaxVal = -Infinity;
   for (let r = 0; r < n; r++) {
-    let val = P_table.getNum(r, colName);
+    //let val = P_table.getNum(r, lineSelect.lineAbbrev);
+    let val = colExists ? P_table.getNum(r, lineSelect.lineAbbrev) : 0; // Get Value if Column exists, otherwise 0
+    if (!isFinite(val)) val = 0; // If not a value, replace with 0
+
     if (val < lineminVal) lineminVal = val;
     if (val > linemaxVal) linemaxVal = val;
   }
@@ -470,15 +474,18 @@ function circularBarPlot(markerX) {
 
   }
   let radius = radius_circularPlot;
-  let barWidth = 2;
+  let barWidth = 1;
   let nBars = n; // one bar per time step
   let angleStep = TWO_PI / nBars;
 
   // If colName changed, update targetBarLens
-  if (colName !== lastColName || targetBarLens.length !== nBars) {
+  if (lineSelect.lineAbbrev !== lastColName || targetBarLens.length !== nBars) {
     targetBarLens = [];
     for (let i = 0; i < nBars; i++) {
-      let val = P_table.getNum(i, colName);
+      // let val = P_table.getNum(i, lineSelect.lineAbbrev);
+      let val = colExists ? P_table.getNum(i, lineSelect.lineAbbrev) : 0; // Get Value if Column exists, otherwise 0
+      if (!isFinite(val)) val = 0; // If not a value, replace with 0
+
       let barLen = map(val, minpower, maxpower, minpower*PixelperMW, maxpower*PixelperMW);
       targetBarLens.push(barLen);
     }
@@ -486,14 +493,19 @@ function circularBarPlot(markerX) {
     if (animatedBarLens.length !== nBars) {
       animatedBarLens = targetBarLens.slice();
     }
-    lastColName = colName;
+    lastColName = lineSelect.lineAbbrev;
   }
   // Animate bar lengths
   for (let i = 0; i < nBars; i++) {
     animatedBarLens[i] = lerp(animatedBarLens[i], targetBarLens[i], 0.15); // smooth step
-    let val = P_table.getNum(i, colName);
-    let tmp = map(val, lineminVal, linemaxVal, 0, 1);
-    let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
+    // let val = P_table.getNum(i, lineSelect.lineAbbrev);
+    let val = colExists ? P_table.getNum(i, lineSelect.lineAbbrev) : 0; // Get Value if Column exists, otherwise 0
+    if (!isFinite(val)) val = 0; // If not a value, replace with 0
+    // let tmp = map(val, lineminVal, linemaxVal, 0, 1);
+    // let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
+    let maxAbs = max(abs(lineminVal), abs(linemaxVal));     // maximum absolute value for symmetric scaling
+    let tmp = map(abs(val), 0, maxAbs, 0, 1);     // map distance from zero
+    let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);    // blue (0) → red (large magnitude)
     let angle = -HALF_PI + i * angleStep;
     let x0 = cx + cos(angle) * radius;
     let y0 = cy + sin(angle) * radius;
@@ -563,7 +575,7 @@ function circularBarPlot(markerX) {
 
   // draw marker line
   push();
-  stroke(BKW_Light_Green);
+  stroke(BKW_Black);
   strokeWeight(4);
   translate(cx, cy);   // translate to center first, then rotate so rotation is around (cx, cy)
   let markerAngle = map(markerX, timelineRect.x, timelineRect.x + timelineRect.w, -HALF_PI, -HALF_PI + TWO_PI );
@@ -958,21 +970,39 @@ function drawLegend() {
   textAlign(LEFT, CENTER);
   textSize(14);
   text("Screenshot speichern", legendX + 30, yBase + 59);
+
+  // add Box around legend
+  // noFill();
+  // stroke(BKW_Dark_Blue);
+  // strokeWeight(2);
+  // rect(legendX - 5, legendY - 50, 270, 225, 0);
 }
 
 
 function drawTitle() {
 
-  textAlign(RIGHT, TOP);
-  fill(0);
-
-  // Titel
+  let title = "Eine Woche im Hochspannungsnetz";
   textSize(50);
   textStyle(BOLD);
-  text("Eine Woche im Hochspannungsnetz",canvasWidth - 10,10);
-
+  textAlign(RIGHT, TOP);
+  let padding = 2;
+  let tw = textWidth(title);
+  let th = textAscent() + textDescent();
+  // noStroke();
+  // fill(BKW_Dark_Blue); 
+  // rect(canvasWidth - 10 - tw - padding, 10 - padding, tw + padding * 2, th + padding * 2);  // draw background rectangle
+  // fill(BKW_Black_10);
+  fill(0);
+  stroke(BKW_Dark_Blue);
+  strokeWeight(4);
+  line(canvasWidth - tw - 100, 14+th, canvasWidth - 10, 14+th);  // draw background rectangle
+  noStroke()
+  text(title, canvasWidth - 10, 10);
+  
   // Lead / Untertitel
   textSize(18);
+  fill(0);
+
   textStyle(NORMAL);
   // text("Diese Visualisierung macht die Energieflüsse im Hochspannungsnetz\nim Raum Bern, Jura und Solothurn",canvasWidth - 10,70);
  text(
@@ -986,7 +1016,7 @@ function drawTitle() {
     "Zusammen bilden sie das Rückgrat einer stabilen \n" +
     "Energieversorgung. Dieses Visualisierung macht die Energieflüsse in diesem komplexen Netz sichtbar.",
     canvasWidth - 10,
-    70
+    80
   );
 }
 
@@ -1066,23 +1096,23 @@ function mousePressed() {
           // Ensure lineAbbrev is a non-empty string
           if (typeof l.lineAbbrev !== 'string' || l.lineAbbrev.trim() === '') {
             console.warn('Line abbreviation missing or invalid for line:', l);
-            colName = 'LTH 1BACBRI';
+            // colName = 'LTH 1BACBRI';
             lineSelect = l; 
             //chosen_line_limit = l.linelimit;
-            found = true;
+            //found = true;
           } else {
-            colName = l.lineAbbrev;
+            // colName = l.lineAbbrev;
             lineSelect = l; 
             //chosen_line_limit = l.linelimit;
-            found = true;
+            //found = true;
           }
         }
       }
     });
   }
-  if (found) {
-    print('Selected line:', colName);
-  }
+  // if (found) {
+  //   print('Selected line:', colName);
+  // }
 
  // Timeline interaction
   if (
@@ -1106,8 +1136,6 @@ function mousePressed() {
     timelineActive = true;
     return;
   }
-  
-
 
 }
 
