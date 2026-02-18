@@ -190,8 +190,9 @@ function load_lines(timestamp) {
             let raw = row.Waypoints.includes("|") ? row.Waypoints.split("|") : [row.Waypoints];
             waypoints = raw.map(pair => {
               let [origX, origY] = pair.split(",").map(Number);
-              let x = map(origX, minX, maxX, mapX, gridWidth);
-              let y = map(origY, minY, maxY, mapY, gridHeight);
+              let x = map(origX, minX, maxX, mapX, mapX + gridWidth);
+              let y = map(origY, minY, maxY, mapY, mapY + gridHeight);
+
               return { x, y };
             });
           }
@@ -352,9 +353,10 @@ function timeline_slider() {
     // Labels
     fill(0);
     noStroke();
-    textSize(14);
+    textSize(16);
     textAlign(LEFT, BOTTOM);
     text("Bewege den Schieberegler, um einen Zeitpunkt auszuwählen", timelineRect.x, timelineRect.y + timelineRect.h + 25);
+    textSize(12);
     textAlign(LEFT, TOP);
     text("Maximale Leistung im Netz", timelineRect.x + timelineRect.w + 10, timelineRect.y-5);
     textAlign(LEFT, BOTTOM);
@@ -527,7 +529,7 @@ function circularBarPlot(markerX) {
     if (r % 2 === 0) {
       stroke(60);
       textAlign(CENTER, CENTER);
-      textSize(10);
+      textSize(12);
       text((MWSteps * r / PixelperMW) + " MW", cx, cy + rr);
     }  
   }
@@ -552,7 +554,7 @@ function circularBarPlot(markerX) {
   let tickRadiusInner = radius - 150;
   let tickRadiusOuter = radius + 150;
   textAlign(CENTER, CENTER);
-  textSize(18);
+  textSize(16);
   fill(0);
   strokeWeight(2);
   for (let d = 0; d < daysInWeek; d++) {
@@ -698,13 +700,15 @@ function draw() {
     scale(scaleFactor);
     // tint(255, 255, 255, 255);  
     image(BKWmapImg, mapX-50, mapY, mapWidth, mapHeight);  
-    // noTint();  
-    // pop();
-    if (substations.length === 0) {
-        text("Loading data...", width / 2, height / 2);
-        pop();
-        return;
-    }
+    drawRegionLabels();
+
+   
+    // if (substations.length === 0) {
+    //     textAlign(CENTER, CENTER);
+    //     text("Loading data...", 100, 100);
+    //     pop();
+    //     return;
+    // }
  
     for (let voltage in voltageLayers) {
         const layer = voltageLayers[voltage];
@@ -775,45 +779,13 @@ function draw() {
           let d = dist(mouseX/scaleFactor, mouseY/scaleFactor, sub.x, sub.y);
           if (d < 5) { // Show name if mouse is within 10 pixels
             textAlign(CENTER, CENTER);
-            textSize(20);
-            fill(255);
-            text(sub.name, sub.x, sub.y);
+            textSize(16);
+            fill(0);
+            text(sub.name, sub.x, sub.y-20);
           }
         });
       }
   
-
-    drawLegend();
-    drawTitle();
-
-
-
-    // ---------------- Plot timerseries --------------------
-    
-
-    // // Draw line plot
-    // noFill();
-    // strokeWeight(4);
-    // beginShape();
-    // let row = 0;
-    // for (let d = 1; d < days+1; d++) {
-    //     for (let t = 0; t < timevalues; t++) {
-    //       let x1 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
-    //       let y1 = d*50
-    //       let x2 = map(t, 0, timevalues - 1, gridWidth+100, canvasWidth - margin);
-    //       let y2 = d*50 + 50;
-    //       let val = P_table.getNum(row, colName);
-    //       row = row+1
-    //       // Map val to a color gradient (e.g., blue to red)
-    //       let tmp = map(val, lineminVal, linemaxVal, 0, 1);
-    //       let col = lerpColor(color(0, 100, 255), color(255, 0, 0), tmp);
-    //       stroke(col);
-
-    //       line(x1, y1, x2, y2);
-    //     }
-    // }
-    // endShape()
-
     // Timeline rectangle for timestamp selection
     let markerX = timeline_slider()
 
@@ -821,51 +793,49 @@ function draw() {
     circularBarPlot(markerX);
 
     
-    // Draw Mouse Pos onto screen
-    if (substations.length > 0) {
-      // Convert canvas to original coordinates
-      let origX = map(mouseX/scaleFactor, 50, gridWidth, minX, maxX);
-      let origY = map(mouseY/scaleFactor, 50, gridHeight, minY, maxY);
-    
-      // Optional: round for readability
-      origX = nf(origX, 1, 0);  // or use toFixed()
-      origY = nf(origY, 1, 0);
-    
-      // Draw background label
-      fill(255, 255, 255, 200);
-      rect(mouseX/scaleFactor+20, mouseY/scaleFactor, 50, 30, 5);
-    
-      // Draw text
-      fill(0);
-      textSize(10);
-      text(`X: ${origX}`, mouseX/scaleFactor + 40, mouseY/scaleFactor + 20);
-      text(`Y: ${origY}`, mouseX/scaleFactor + 40, mouseY/scaleFactor + 10);
-    }
-    
-    // textSize(10);
-    // fill(0);
-    // textAlign(LEFT, TOP);
-    // text("📅 Letztes Update: " + lastUpdateTime, 20, canvasHeight - 30);
+    // // Draw Mouse Pos onto screen
+    // if (substations.length > 0) {
+    //   let mx = mouseX / scaleFactor;
+    //   let my = mouseY / scaleFactor;
 
-    fill(255);
-    textAlign(LEFT, BOTTOM);
-    textSize(10);
-    text(timestamp, 20, canvasHeight - 10);
+    //   // only if mouse is inside the grid area
+    //   if (mx >= mapX && mx <= mapX + gridWidth && my >= mapY && my <= mapY + gridHeight) {
 
-    textSize(10);
-    fill(255);
-    textAlign(RIGHT, BOTTOM);
-    text(`Average Power: ${average_power !== null ? average_power.toFixed(2) : "N/A"}`, canvasWidth - 20, canvasHeight - 10);
+    //     let origX = map(mx, mapX, mapX + gridWidth,  minX, maxX);
+    //     let origY = map(my, mapY, mapY + gridHeight, minY, maxY);
 
-   
+    //     origX = nf(origX, 1, 0);
+    //     origY = nf(origY, 1, 0);
+
+    //     // draw label in DESIGN space (since you're still inside scale())
+    //     fill(255, 255, 255, 220);
+    //     noStroke();
+    //     rect(mx + 15, my - 18, 90, 32, 5);
+
+    //     fill(0);
+    //     textSize(10);
+    //     textAlign(LEFT, TOP);
+    //     text(`X: ${origX}\nY: ${origY}`, mx + 20, my - 15);
+    //   }
+    // }
+    
 
     cursor(isMouseHovering() ? HAND : ARROW);
+
+
+    drawLegend();
+    drawTitle();
+    drawSourceNote();
+
 
     pop();
 
     if (magnifier) {
       drawMagnifier(mouseX, mouseY, 100, 2);
     }
+
+
+
 
 }
 
@@ -982,10 +952,19 @@ function drawLegend() {
 function drawTitle() {
 
   let title = "Eine Woche im Hochspannungsnetz";
+  let lead_text = "Das Hochspannungsnetz der BKW Energie AG besteht" +
+    "aus mehreren Tausend Kilometer Leitung, verteilt auf\n" +
+    "zwei Spannungsebenen - 50 kV und 132 kV (Kilovolt)." +
+    "Hinzu kommt das überlagerte Höchstspannungsnetz der\n" +
+    "Swissgrid. Diese vielen Hochspannungsleitungen formen " +
+    "ein komplexes vermaschtes Netz und stellen den über-\n" +
+    "regionalen Transport der elektrischen Energie sicher. " +
+    "Zusammen bilden sie das Rückgrat einer stabilen \n" +
+    "Energieversorgung. Dieses Visualisierung macht die Energieflüsse in diesem komplexen Netz sichtbar.";
+    
   textSize(50);
   textStyle(BOLD);
   textAlign(RIGHT, TOP);
-  let padding = 2;
   let tw = textWidth(title);
   let th = textAscent() + textDescent();
   // noStroke();
@@ -995,29 +974,44 @@ function drawTitle() {
   fill(0);
   stroke(BKW_Dark_Blue);
   strokeWeight(4);
-  line(canvasWidth - tw - 100, 14+th, canvasWidth - 10, 14+th);  // draw background rectangle
+  line(canvasWidth - tw - 185, 14+th, canvasWidth - 10, 14+th);  
   noStroke()
   text(title, canvasWidth - 10, 10);
   
   // Lead / Untertitel
-  textSize(18);
+  textSize(20);
   fill(0);
 
   textStyle(NORMAL);
   // text("Diese Visualisierung macht die Energieflüsse im Hochspannungsnetz\nim Raum Bern, Jura und Solothurn",canvasWidth - 10,70);
- text(
-    "Das Hochspannungsnetz der BKW Energie AG besteht" +
-    "aus mehreren Tausend Kilometer Leitung, verteilt auf\n" +
-    "zwei Spannungsebenen - 50 kV und 132 kV (Kilovolt)." +
-    "Hinzu kommt das überlagerte Höchstspannungsnetz der\n" +
-    "Swissgrid. Diese vielen Hochspannungsleitungen formen " +
-    "ein komplexes vermaschtes Netz und stellen den über-\n" +
-    "regionalen Transport der elektrischen Energie sicher. " +
-    "Zusammen bilden sie das Rückgrat einer stabilen \n" +
-    "Energieversorgung. Dieses Visualisierung macht die Energieflüsse in diesem komplexen Netz sichtbar.",
-    canvasWidth - 10,
-    80
-  );
+ 
+
+  text(lead_text, canvasWidth - 10,80);
+}
+
+function drawSourceNote() {
+
+  let txt = "Quelle: Die dargestellten Daten wurden synthetisch generiert. Es handelt sich nicht um reale Messwerte.";
+
+  fill(0);              
+  noStroke();
+  textAlign(LEFT, BOTTOM);
+  textSize(12);
+  text(txt, 10, canvasHeight - 5);
+}
+
+function drawRegionLabels() {
+
+  fill(BKW_Black_25);
+  noStroke();
+  textAlign(CENTER, CENTER);
+  textSize(30);
+  
+  text("Berner Oberland", mapX + gridWidth * 0.5, mapY + gridHeight * 0.7);
+  text("Jura",            mapX + gridWidth * 0.2, mapY + gridHeight * 0.13);
+  text("Bern",            mapX + gridWidth * 0.35, mapY + gridHeight * 0.41);
+  text("Solothurn",       mapX + gridWidth * 0.40, mapY + gridHeight * 0.23);
+
 }
 
 function isMouseHovering() {
